@@ -1,22 +1,10 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import * as THREE from "three";
 
-interface BatSignalSceneProps {
-  // Props будем добавлять по мере необходимости
-}
-
-const createRandomGeometry = () => {
-  const shapes = [
-    { type: "box" as const, args: [1, 1, 1] as [number, number, number] },
-    { type: "sphere" as const, args: [0.8, 32, 32] as [number, number, number] },
-    { type: "cone" as const, args: [0.8, 1.5, 32] as [number, number, number] },
-  ];
-
-  return shapes[Math.floor(Math.random() * shapes.length)];
-};
+interface BatSignalSceneProps {}
 
 const GeometryGroup = () => {
   const positions = [
@@ -30,7 +18,12 @@ const GeometryGroup = () => {
   return (
     <group>
       {positions.map((item, idx) => {
-        const geometry = createRandomGeometry();
+        const type = idx % 3;
+        const geometry =
+          type === 0 ? <boxGeometry args={[1, 1, 1]} /> :
+          type === 1 ? <sphereGeometry args={[0.8, 32, 32]} /> :
+          <coneGeometry args={[0.8, 1.5, 32]} />;
+
         return (
           <mesh
             key={idx}
@@ -39,15 +32,7 @@ const GeometryGroup = () => {
             castShadow
             receiveShadow
           >
-            {geometry.type === "box" && (
-              <boxGeometry args={geometry.args as [number, number, number]} />
-            )}
-            {geometry.type === "sphere" && (
-              <sphereGeometry args={geometry.args as [number, number, number]} />
-            )}
-            {geometry.type === "cone" && (
-              <coneGeometry args={geometry.args as [number, number, number]} />
-            )}
+            {geometry}
             <meshStandardMaterial
               color={0x4a90e2}
               metalness={0.3}
@@ -62,11 +47,48 @@ const GeometryGroup = () => {
 
 export const BatSignalScene: React.FC<BatSignalSceneProps> = () => {
   const sceneRef = useRef<THREE.Group>(null);
-  const spotLightRef = useRef<THREE.SpotLight>(null);
+  const spotLightRef = useRef<THREE.SpotLight | null>(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const planeRef = useRef(new THREE.Plane(new THREE.Vector3(0, 0, 1), 5));
   const intersectionRef = useRef(new THREE.Vector3());
-  const { mouse, camera } = useThree();
+  const { mouse, camera, scene } = useThree();
+
+  useEffect(() => {
+    if (!sceneRef.current) return;
+
+    // Удаляем старые lights
+    scene.children.forEach((child) => {
+      if (child instanceof THREE.Light) {
+        scene.remove(child);
+      }
+    });
+
+    // Создаём ambient light
+    const ambientLight = new THREE.AmbientLight(0x4a5a7f, 1.2);
+    scene.add(ambientLight);
+
+    // Создаём spotlight
+    const spotLight = new THREE.SpotLight(0xffffff, 5);
+    spotLight.position.set(8, 20, 12);
+    spotLight.angle = Math.PI / 3.5;
+    spotLight.penumbra = 0.8;
+    spotLight.decay = 1;
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize.width = 2048;
+    spotLight.shadow.mapSize.height = 2048;
+    spotLight.shadow.camera.far = 150;
+    spotLight.shadow.camera.near = 0.5;
+    spotLight.target.position.set(0, 0, 0);
+    scene.add(spotLight);
+    scene.add(spotLight.target);
+    spotLightRef.current = spotLight;
+
+    return () => {
+      scene.remove(ambientLight);
+      scene.remove(spotLight);
+      scene.remove(spotLight.target);
+    };
+  }, [scene]);
 
   const getMouseWorldPosition = () => {
     raycasterRef.current.setFromCamera(mouse, camera);
@@ -87,23 +109,6 @@ export const BatSignalScene: React.FC<BatSignalSceneProps> = () => {
 
   return (
     <group ref={sceneRef}>
-      {/* Ambient light для общего освещения */}
-      <ambientLight intensity={0.5} color={0x4a5a7f} />
-
-      {/* SpotLight - батсигнал */}
-      <spotLight
-        ref={spotLightRef}
-        position={[5, 15, 10]}
-        intensity={3}
-        angle={Math.PI / 4}
-        penumbra={0.8}
-        decay={1.5}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={100}
-      />
-
-      {/* Геометрия */}
       <GeometryGroup />
 
       {/* Плоскость для получения теней */}
@@ -112,8 +117,8 @@ export const BatSignalScene: React.FC<BatSignalSceneProps> = () => {
         position={[0, -1, 0]}
         receiveShadow
       >
-        <planeGeometry args={[30, 30]} />
-        <meshStandardMaterial color={0x1a1a2e} />
+        <planeGeometry args={[40, 40]} />
+        <meshStandardMaterial color={0x0d0d1a} />
       </mesh>
     </group>
   );
