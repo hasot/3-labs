@@ -23,8 +23,9 @@ export const BatSignalScene = () => {
   useFrame(() => {
     if (spotLightRef.current) {
       const worldPos = getMouseWorldPosition();
-      spotLightRef.current.position.copy(worldPos);
-      spotLightRef.current.position.z = 8;
+      // Light source is FIXED at bottom-right
+      spotLightRef.current.position.set(18, -15, 12);
+      // But target follows mouse - this creates the diagonal lighting effect
       spotLightRef.current.target.position.copy(worldPos);
       spotLightRef.current.target.position.z = -10;
       spotLightRef.current.target.updateMatrixWorld();
