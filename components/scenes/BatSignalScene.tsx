@@ -24,7 +24,7 @@ export const BatSignalScene = () => {
     if (spotLightRef.current) {
       const worldPos = getMouseWorldPosition();
       spotLightRef.current.position.copy(worldPos);
-      spotLightRef.current.position.z = 10;
+      spotLightRef.current.position.z = 8;
       spotLightRef.current.target.position.copy(worldPos);
       spotLightRef.current.target.position.z = -10;
       spotLightRef.current.target.updateMatrixWorld();
@@ -33,44 +33,40 @@ export const BatSignalScene = () => {
 
   return (
     <>
-      {/* Dark ambient light */}
-      <ambientLight intensity={0.2} color={0x000000} />
+      {/* Ambient light so we can see the canvas */}
+      <ambientLight intensity={0.5} color={0x2a3a4a} />
 
-      {/* Main Spotlight - follows mouse */}
+      {/* Main Spotlight - follows mouse - VERY BRIGHT */}
       <spotLight
         ref={spotLightRef}
-        position={[0, 0, 10]}
-        intensity={20}
-        angle={Math.PI / 2.5}
-        penumbra={0.6}
-        decay={2}
+        position={[0, 0, 8]}
+        intensity={50}
+        angle={Math.PI / 2}
+        penumbra={0.4}
+        decay={1}
         castShadow
       />
 
-      {/* Large background wall/canvas */}
-      <mesh position={[0, 0, -5]} scale={[20, 15, 1]} receiveShadow>
+      {/* Large background wall/canvas - GREY so spotlight is visible */}
+      <mesh position={[0, 0, -5]} scale={[25, 18, 1]} receiveShadow>
         <planeGeometry args={[1, 1]} />
         <meshStandardMaterial
-          color={0x000000}
-          emissive={0x000000}
+          color={0x1a1a2a}
           side={THREE.DoubleSide}
+          metalness={0.1}
+          roughness={0.8}
         />
       </mesh>
 
-      {/* Some 3D objects to add depth */}
-      <mesh position={[-8, -5, -3]} scale={2} castShadow receiveShadow>
+      {/* Some objects for atmosphere */}
+      <mesh position={[-10, -6, -3]} scale={2} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={0x1a1a2e} />
+        <meshStandardMaterial color={0x0d0d15} />
       </mesh>
 
-      <mesh position={[8, 5, -2]} scale={1.5} castShadow receiveShadow>
+      <mesh position={[10, 6, -2]} scale={1.5} castShadow receiveShadow>
         <sphereGeometry args={[1, 32, 32]} />
-        <meshStandardMaterial color={0x1a1a2e} />
-      </mesh>
-
-      <mesh position={[0, -6, -1]} scale={[25, 1, 1]} castShadow receiveShadow>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={0x0d0d1a} />
+        <meshStandardMaterial color={0x0d0d15} />
       </mesh>
     </>
   );
