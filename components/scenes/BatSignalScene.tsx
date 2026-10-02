@@ -9,25 +9,19 @@ export const BatSignalScene = () => {
   const raycasterRef = useRef(new THREE.Raycaster());
   const planeRef = useRef(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0));
   const intersectionRef = useRef(new THREE.Vector3());
+  const targetPosRef = useRef(new THREE.Vector3());
   const { mouse, camera } = useThree();
-
-  const getMouseWorldPosition = () => {
-    raycasterRef.current.setFromCamera(mouse, camera);
-    raycasterRef.current.ray.intersectPlane(
-      planeRef.current,
-      intersectionRef.current
-    );
-    return intersectionRef.current;
-  };
 
   useFrame(() => {
     if (spotLightRef.current) {
-      const worldPos = getMouseWorldPosition();
-      // POWERFUL projector - light source far away at bottom-right
-      spotLightRef.current.position.set(40, -35, 35);
-      // Target follows mouse for diagonal effect
-      spotLightRef.current.target.position.copy(worldPos);
-      spotLightRef.current.target.position.z = -20;
+      // Get mouse position immediately every frame
+      raycasterRef.current.setFromCamera(mouse, camera);
+      raycasterRef.current.ray.intersectPlane(planeRef.current, intersectionRef.current);
+
+      // Update target position directly - NO DELAY
+      targetPosRef.current.copy(intersectionRef.current);
+      targetPosRef.current.z = -20;
+      spotLightRef.current.target.position.copy(targetPosRef.current);
       spotLightRef.current.target.updateMatrixWorld();
     }
   });
