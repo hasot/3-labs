@@ -44,11 +44,30 @@ export default function BatSignalPage() {
       mouseY = e.clientY;
     });
 
+    // Light source position (fixed at right side)
+    const lightSourceX = canvas.width - 50;
+    const lightSourceY = 50;
+
     const drawFrame = () => {
       if (!nightImageRef.current || !lightImageRef.current) return;
 
       // Draw night image as base
       ctx.drawImage(nightImageRef.current, 0, 0, canvas.width, canvas.height);
+
+      // Draw light beam from source to mouse (subtle cone)
+      const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
+      gradient.addColorStop(0, "rgba(255, 255, 200, 0.05)");
+      gradient.addColorStop(1, "rgba(255, 255, 200, 0.15)");
+
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 400;
+      ctx.lineCap = "round";
+      ctx.globalAlpha = 0.2;
+      ctx.beginPath();
+      ctx.moveTo(lightSourceX, lightSourceY);
+      ctx.lineTo(mouseX, mouseY);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
 
       // Create circular mask for spotlight
       ctx.save();
