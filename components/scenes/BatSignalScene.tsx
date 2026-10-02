@@ -41,7 +41,7 @@ export const BatSignalScene = () => {
         ref={spotLightRef}
         position={[0, 0, 8]}
         intensity={100}
-        angle={Math.PI / 6}
+        angle={Math.PI / 12}
         penumbra={0}
         decay={0.5}
         castShadow
