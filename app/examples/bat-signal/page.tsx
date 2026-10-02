@@ -37,7 +37,7 @@ export default function BatSignalPage() {
     // Mouse position
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
-    const spotlightRadius = 100;
+    const spotlightRadius = 50;
 
     document.addEventListener("mousemove", (e) => {
       mouseX = e.clientX;
