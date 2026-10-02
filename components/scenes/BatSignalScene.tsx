@@ -23,11 +23,11 @@ export const BatSignalScene = () => {
   useFrame(() => {
     if (spotLightRef.current) {
       const worldPos = getMouseWorldPosition();
-      // Light source is FIXED at bottom-right
-      spotLightRef.current.position.set(18, -15, 12);
-      // But target follows mouse - this creates the diagonal lighting effect
+      // POWERFUL projector - light source far away at bottom-right
+      spotLightRef.current.position.set(40, -35, 35);
+      // Target follows mouse for diagonal effect
       spotLightRef.current.target.position.copy(worldPos);
-      spotLightRef.current.target.position.z = -10;
+      spotLightRef.current.target.position.z = -20;
       spotLightRef.current.target.updateMatrixWorld();
     }
   });
@@ -37,25 +37,25 @@ export const BatSignalScene = () => {
       {/* Ambient light so we can see the canvas */}
       <ambientLight intensity={0.5} color={0x2a3a4a} />
 
-      {/* Main Spotlight - follows mouse - SHARP FOCUSED CIRCLE */}
+      {/* POWERFUL PROJECTOR - sharp focused light from far away */}
       <spotLight
         ref={spotLightRef}
-        position={[0, 0, 8]}
-        intensity={100}
-        angle={Math.PI / 48}
+        position={[40, -35, 35]}
+        intensity={150}
+        angle={Math.PI / 40}
         penumbra={0}
-        decay={0.5}
+        decay={0.3}
         castShadow
       />
 
-      {/* Large background wall/canvas - GREY so spotlight is visible */}
-      <mesh position={[0, 0, -5]} scale={[25, 18, 1]} receiveShadow>
+      {/* FULL SCREEN background wall/canvas */}
+      <mesh position={[0, 0, -10]} scale={[100, 75, 1]} receiveShadow>
         <planeGeometry args={[1, 1]} />
         <meshStandardMaterial
           color={0x1a1a2a}
           side={THREE.DoubleSide}
-          metalness={0.1}
-          roughness={0.8}
+          metalness={0.05}
+          roughness={0.9}
         />
       </mesh>
 
