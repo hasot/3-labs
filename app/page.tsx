@@ -16,6 +16,11 @@ const EXAMPLES = [
     title: "Particle System",
     description: "Instanced particles with emitter.",
   },
+  {
+    slug: "bat-signal",
+    title: "Bat Signal",
+    description: "Interactive spotlight following mouse, realistic lighting with shadows.",
+  },
 ];
 
 export default function Home() {
