@@ -88,19 +88,19 @@ export const BatSignalScene: React.FC<BatSignalSceneProps> = () => {
   return (
     <group ref={sceneRef}>
       {/* Ambient light для общего освещения */}
-      <ambientLight intensity={0.3} color={0x1a1a2e} />
+      <ambientLight intensity={0.5} color={0x4a5a7f} />
 
       {/* SpotLight - батсигнал */}
       <spotLight
         ref={spotLightRef}
-        position={[0, 10, 5]}
-        intensity={2}
-        angle={Math.PI / 6}
-        penumbra={0.5}
-        decay={2}
+        position={[5, 15, 10]}
+        intensity={3}
+        angle={Math.PI / 4}
+        penumbra={0.8}
+        decay={1.5}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={50}
+        shadow-camera-far={100}
       />
 
       {/* Геометрия */}
@@ -112,8 +112,8 @@ export const BatSignalScene: React.FC<BatSignalSceneProps> = () => {
         position={[0, -1, 0]}
         receiveShadow
       >
-        <planeGeometry args={[20, 20]} />
-        <meshStandardMaterial color={0x0a0a0a} />
+        <planeGeometry args={[30, 30]} />
+        <meshStandardMaterial color={0x1a1a2e} />
       </mesh>
     </group>
   );
