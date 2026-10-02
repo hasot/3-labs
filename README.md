@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎨 3D Labs
 
-## Getting Started
+Three.js learning laboratory with React Three Fiber + Next.js 15.
 
-First, run the development server:
+**Status:** Ready for development  
+**Examples:** 3 (Floating Box, Rotating Cube, Particle System)  
+**Skills installed:** 43 (Three.js Skills, Game Skills, Awesome Graphics)
+
+## Quick Start
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+3-labs/
+├── app/
+│   ├── page.tsx                 # Home (examples list)
+│   ├── examples/[slug]/page.tsx # Dynamic example page
+│   └── globals.css
+├── components/
+│   └── examples/                # Example components
+│       ├── FloatingBox.tsx
+│       ├── RotatingCube.tsx
+│       └── ParticleSystem.tsx
+├── .claude/
+│   └── skills/                  # 43 Three.js skills
+└── package.json
+```
 
-## Learn More
+## Examples
 
-To learn more about Next.js, take a look at the following resources:
+- **Floating Box** - Basic geometry + physics (Rapier)
+- **Rotating Cube** - Animation with useFrame
+- **Particle System** - Instanced particles (1000 particles)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Next.js 15** (App Router)
+- **React 19**
+- **Three.js** (latest)
+- **React Three Fiber** - Declarative 3D with React
+- **Drei** - Useful R3F components
+- **@react-three/rapier** - Physics simulation
+- **Tailwind CSS** - Styling
 
-## Deploy on Vercel
+## Skills (43 installed)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Three.js Skills (10)
+threejs-fundamentals, threejs-geometry, threejs-materials, threejs-lighting, threejs-textures, threejs-animation, threejs-loaders, threejs-shaders, threejs-postprocessing, threejs-interaction
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Game Skills (9)
+threejs-game-director, threejs-aaa-graphics-builder, threejs-gameplay-systems, etc.
+
+### Awesome Graphics (24)
+threejs-procedural-geometry, threejs-volumetric-clouds, threejs-raymarched-space-effects, threejs-shader-systems, etc.
+
+## Development
+
+### Add a new example
+1. Create component in `components/examples/YourExample.tsx`
+2. Add to imports in `app/examples/[slug]/page.tsx`
+3. Add to EXAMPLES object with slug
+
+### Use Claude Code with skills
+Claude automatically loads relevant skills when you ask about Three.js, lighting, shaders, etc.
+
+## Performance
+
+- Use `InstancedMesh` for 1000+ identical geometries
+- Lazy load examples with `next/dynamic`
+- Use `OrbitControls` for camera interaction
+
+## Resources
+
+- [Three.js Journey](https://threejs-journey.com/)
+- [React Three Fiber Docs](https://docs.pmnd.rs/react-three-fiber/)
+- [Drei Components](https://github.com/pmndrs/drei)
+- [Awesome React Three Fiber](https://github.com/gsimone/awesome-react-three-fiber)
