@@ -36,14 +36,14 @@ export const BatSignalScene = () => {
       {/* Ambient light so we can see the canvas */}
       <ambientLight intensity={0.5} color={0x2a3a4a} />
 
-      {/* Main Spotlight - follows mouse - VERY BRIGHT */}
+      {/* Main Spotlight - follows mouse - SHARP FOCUSED CIRCLE */}
       <spotLight
         ref={spotLightRef}
         position={[0, 0, 8]}
-        intensity={50}
-        angle={Math.PI / 2}
-        penumbra={0.4}
-        decay={1}
+        intensity={100}
+        angle={Math.PI / 6}
+        penumbra={0}
+        decay={0.5}
         castShadow
       />
 
