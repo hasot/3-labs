@@ -99,8 +99,7 @@ export const BatSignalScene: React.FC<BatSignalSceneProps> = () => {
         penumbra={0.5}
         decay={2}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize={[2048, 2048]}
         shadow-camera-far={50}
       />
 
