@@ -70,9 +70,9 @@ export default function BatSignalPage() {
       mouseY = e.clientY;
     });
 
-    // Light source position (fixed at right side)
-    const lightSourceX = canvas.width - 50;
-    const lightSourceY = 50;
+    // Light source position (bottom right corner)
+    const lightSourceX = canvas.width - 80;
+    const lightSourceY = canvas.height - 80;
 
     const drawFrame = () => {
       if (!nightVideoRef.current || !lightVideoRef.current) return;
@@ -80,19 +80,37 @@ export default function BatSignalPage() {
       // Draw night video as base
       ctx.drawImage(nightVideoRef.current, 0, 0, canvas.width, canvas.height);
 
-      // Draw light beam from source to mouse (subtle cone)
-      const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
-      gradient.addColorStop(0, "rgba(255, 255, 200, 0.05)");
-      gradient.addColorStop(1, "rgba(255, 255, 200, 0.15)");
+      // Draw cone-shaped light beam from bottom-right to mouse
+      const dx = mouseX - lightSourceX;
+      const dy = mouseY - lightSourceY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = 400;
-      ctx.lineCap = "round";
-      ctx.globalAlpha = 0.2;
+      // Normalize direction
+      const dirX = dx / distance;
+      const dirY = dy / distance;
+
+      // Perpendicular vector for cone width
+      const perpX = -dirY;
+      const perpY = dirX;
+      const coneWidth = 150;
+
+      // Draw cone shape
+      const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
+      gradient.addColorStop(0, "rgba(255, 255, 255, 0.01)");
+      gradient.addColorStop(0.5, "rgba(255, 255, 200, 0.08)");
+      gradient.addColorStop(1, "rgba(255, 255, 200, 0.12)");
+
+      ctx.fillStyle = gradient;
+      ctx.globalAlpha = 0.25;
+
+      // Cone triangle from source to mouse point
       ctx.beginPath();
       ctx.moveTo(lightSourceX, lightSourceY);
-      ctx.lineTo(mouseX, mouseY);
-      ctx.stroke();
+      ctx.lineTo(mouseX + perpX * coneWidth, mouseY + perpY * coneWidth);
+      ctx.lineTo(mouseX - perpX * coneWidth, mouseY - perpY * coneWidth);
+      ctx.closePath();
+      ctx.fill();
+
       ctx.globalAlpha = 1;
 
       // Create circular mask for spotlight
