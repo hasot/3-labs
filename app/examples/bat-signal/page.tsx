@@ -130,22 +130,6 @@ export default function BatSignalPage() {
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Lantern position (where light source is)
-      const lanternX = lightSourceX;
-      const lanternY = lightSourceY;
-      const distanceToLantern = Math.sqrt(
-        Math.pow(mouseX - lanternX, 2) + Math.pow(mouseY - lanternY, 2)
-      );
-
-      // When spotlight is near lantern, darken it completely (light source doesn't emit when lit)
-      if (distanceToLantern < baseSpotlightRadius * 2.5) {
-        const darkenIntensity = Math.max(0, 1 - distanceToLantern / (baseSpotlightRadius * 2.5));
-        ctx.fillStyle = `rgba(0, 0, 0, ${0.95 * darkenIntensity})`;
-        ctx.beginPath();
-        ctx.arc(lanternX, lanternY, baseSpotlightRadius * 0.7, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
       requestAnimationFrame(drawFrame);
     };
 
