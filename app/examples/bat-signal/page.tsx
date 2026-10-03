@@ -95,17 +95,17 @@ export default function BatSignalPage() {
 
       // Dynamic cone width based on direction - distorts when pointing left, circular when pointing right
       const angleX = dirX; // -1 (left) to 1 (right)
-      const baseWidth = 140;
-      const coneWidth = baseWidth + angleX * 220; // Gets narrower going left, wider going right
+      const baseWidth = 200;
+      const coneWidth = baseWidth + angleX * 280; // Gets narrower going left, wider going right
 
       // Draw cone shape with enhanced intensity
       const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
-      gradient.addColorStop(0, "rgba(255, 255, 255, 0.02)");
-      gradient.addColorStop(0.3, "rgba(255, 255, 200, 0.12)");
-      gradient.addColorStop(1, "rgba(255, 255, 200, 0.18)");
+      gradient.addColorStop(0, "rgba(255, 255, 255, 0.03)");
+      gradient.addColorStop(0.3, "rgba(255, 255, 200, 0.16)");
+      gradient.addColorStop(1, "rgba(255, 255, 200, 0.24)");
 
       ctx.fillStyle = gradient;
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.5;
 
       // Cone triangle from source to mouse point
       ctx.beginPath();
@@ -137,12 +137,12 @@ export default function BatSignalPage() {
         Math.pow(mouseX - lanternX, 2) + Math.pow(mouseY - lanternY, 2)
       );
 
-      // When spotlight is near lantern, darken it (light source doesn't emit when lit)
-      if (distanceToLantern < baseSpotlightRadius * 2) {
-        const darkenIntensity = Math.max(0, 1 - distanceToLantern / (baseSpotlightRadius * 2));
-        ctx.fillStyle = `rgba(0, 0, 0, ${0.7 * darkenIntensity})`;
+      // When spotlight is near lantern, darken it completely (light source doesn't emit when lit)
+      if (distanceToLantern < baseSpotlightRadius * 2.5) {
+        const darkenIntensity = Math.max(0, 1 - distanceToLantern / (baseSpotlightRadius * 2.5));
+        ctx.fillStyle = `rgba(0, 0, 0, ${0.95 * darkenIntensity})`;
         ctx.beginPath();
-        ctx.arc(lanternX, lanternY, baseSpotlightRadius * 0.6, 0, Math.PI * 2);
+        ctx.arc(lanternX, lanternY, baseSpotlightRadius * 0.7, 0, Math.PI * 2);
         ctx.fill();
       }
 
