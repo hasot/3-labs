@@ -70,9 +70,9 @@ export default function BatSignalPage() {
       mouseY = e.clientY;
     });
 
-    // Light source position (right side, higher up - at lantern level)
+    // Light source position (right side, lower down)
     const lightSourceX = canvas.width - 80;
-    const lightSourceY = canvas.height - 250;
+    const lightSourceY = canvas.height - 150;
 
     const drawFrame = () => {
       if (!nightVideoRef.current || !lightVideoRef.current) return;
