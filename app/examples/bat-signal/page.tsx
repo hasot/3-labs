@@ -102,56 +102,6 @@ export default function BatSignalPage() {
       const lanternSize = 60;
       const lanternHalfSize = lanternSize / 2;
 
-      // Draw cone shape from lantern edges
-      const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
-      gradient.addColorStop(0, "rgba(255, 255, 255, 0.03)");
-      gradient.addColorStop(0.3, "rgba(255, 255, 200, 0.16)");
-      gradient.addColorStop(1, "rgba(255, 255, 200, 0.24)");
-
-      ctx.fillStyle = gradient;
-      ctx.globalAlpha = 0.5;
-
-      // Cone from all 4 corners of lantern rectangle
-      ctx.beginPath();
-      // Start from top-left corner
-      ctx.moveTo(lightSourceX - lanternHalfSize, lightSourceY - lanternHalfSize);
-      // Line to top-right corner
-      ctx.lineTo(lightSourceX + lanternHalfSize, lightSourceY - lanternHalfSize);
-
-      // Expand cone width based on distance and direction
-      const expandFactor = distance / 200; // Cone expands with distance
-      const expandedConeWidth = coneWidth * (1 + expandFactor * 0.5);
-
-      // To far top-right
-      ctx.lineTo(
-        mouseX + perpX * expandedConeWidth,
-        mouseY + perpY * expandedConeWidth
-      );
-      // To far bottom-right (bottom right corner expanded)
-      ctx.lineTo(
-        lightSourceX + lanternHalfSize + perpX * expandedConeWidth,
-        lightSourceY + lanternHalfSize + perpY * expandedConeWidth
-      );
-      // To bottom-right corner of lantern
-      ctx.lineTo(lightSourceX + lanternHalfSize, lightSourceY + lanternHalfSize);
-      // To bottom-left corner of lantern
-      ctx.lineTo(lightSourceX - lanternHalfSize, lightSourceY + lanternHalfSize);
-      // To far bottom-left (bottom left expanded)
-      ctx.lineTo(
-        lightSourceX - lanternHalfSize - perpX * expandedConeWidth,
-        lightSourceY + lanternHalfSize - perpY * expandedConeWidth
-      );
-      // To far top-left
-      ctx.lineTo(
-        mouseX - perpX * expandedConeWidth,
-        mouseY - perpY * expandedConeWidth
-      );
-
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.globalAlpha = 1;
-
       // Draw visible lantern rectangle
       ctx.fillStyle = "rgba(50, 50, 50, 0.8)";
       ctx.fillRect(
