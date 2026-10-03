@@ -6,6 +6,7 @@ export default function BatSignalPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nightVideoRef = useRef<HTMLVideoElement | null>(null);
   const lightVideoRef = useRef<HTMLVideoElement | null>(null);
+  const batLogoRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -54,6 +55,11 @@ export default function BatSignalPage() {
     nightVideo.src = "/images/base.mp4";
     lightVideo.src = "/images/light.mp4";
 
+    // Load bat logo
+    const batLogo = new Image();
+    batLogo.src = "/images/bat-logo.svg";
+    batLogoRef.current = batLogo;
+
     // Mouse position
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
@@ -99,27 +105,17 @@ export default function BatSignalPage() {
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Draw crosshair inside spotlight circle
-      ctx.strokeStyle = "rgba(255, 255, 200, 0.4)";
-      ctx.lineWidth = 2;
-
-      // Vertical line
-      ctx.beginPath();
-      ctx.moveTo(mouseX, mouseY - spotlightRadius);
-      ctx.lineTo(mouseX, mouseY + spotlightRadius);
-      ctx.stroke();
-
-      // Horizontal line
-      ctx.beginPath();
-      ctx.moveTo(mouseX - spotlightRadius, mouseY);
-      ctx.lineTo(mouseX + spotlightRadius, mouseY);
-      ctx.stroke();
-
-      // Center dot
-      ctx.fillStyle = "rgba(255, 255, 200, 0.6)";
-      ctx.beginPath();
-      ctx.arc(mouseX, mouseY, 3, 0, Math.PI * 2);
-      ctx.fill();
+      // Draw bat logo in center of spotlight
+      if (batLogoRef.current && batLogoRef.current.complete) {
+        const logoSize = spotlightRadius * 1.5;
+        ctx.drawImage(
+          batLogoRef.current,
+          mouseX - logoSize / 2,
+          mouseY - logoSize / 2,
+          logoSize,
+          logoSize
+        );
+      }
 
       requestAnimationFrame(drawFrame);
     };
