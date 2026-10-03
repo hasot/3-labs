@@ -63,7 +63,7 @@ export default function BatSignalPage() {
     // Mouse position
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
-    const baseSpotlightRadius = 90;
+    const baseSpotlightRadius = 112;
 
     document.addEventListener("mousemove", (e) => {
       mouseX = e.clientX;
@@ -104,24 +104,32 @@ export default function BatSignalPage() {
 
       ctx.save();
       ctx.beginPath();
-      ctx.ellipse(mouseX, mouseY, spotlightRadiusX, spotlightRadiusY, Math.atan2(dy, dx), 0, Math.PI * 2);
+      ctx.ellipse(mouseX, mouseY, spotlightRadiusX, spotlightRadiusY, 0, 0, Math.PI * 2);
       ctx.clip();
 
       // Draw light video inside spotlight
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Draw bat logo in center with transparency
+      // Draw bat logo in center with transparency (oval shape)
       if (batLogoRef.current && batLogoRef.current.complete) {
-        const logoSize = baseSpotlightRadius * 1.2;
+        const logoWidth = spotlightRadiusX * 1.8;
+        const logoHeight = spotlightRadiusY * 1.8;
         ctx.globalAlpha = 0.1;
+
+        // Transform and draw stretched oval logo
+        ctx.save();
+        ctx.translate(mouseX, mouseY);
+        ctx.scale(logoWidth / logoHeight, 1);
         ctx.drawImage(
           batLogoRef.current,
-          mouseX - logoSize / 2,
-          mouseY - logoSize / 2,
-          logoSize,
-          logoSize
+          -logoHeight / 2,
+          -logoHeight / 2,
+          logoHeight,
+          logoHeight
         );
+        ctx.restore();
+
         ctx.globalAlpha = 1;
       }
 
