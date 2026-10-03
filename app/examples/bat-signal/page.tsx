@@ -51,8 +51,8 @@ export default function BatSignalPage() {
       lightVideo.play().catch(e => console.error("Light video play error:", e));
     };
 
-    nightVideo.src = "/images/ночь.mp4";
-    lightVideo.src = "/images/свет.mp4";
+    nightVideo.src = "/images/base.mp4";
+    lightVideo.src = "/images/light.mp4";
 
     // Mouse position
     let mouseX = window.innerWidth / 2;
