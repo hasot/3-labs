@@ -25,12 +25,31 @@ export default function BatSignalPage() {
     nightVideo.autoplay = true;
     nightVideo.loop = true;
     nightVideo.muted = true;
+    nightVideo.playsInline = true;
     lightVideo.autoplay = true;
     lightVideo.loop = true;
     lightVideo.muted = true;
+    lightVideo.playsInline = true;
 
     nightVideoRef.current = nightVideo;
     lightVideoRef.current = lightVideo;
+
+    // Add crossorigin for CORS
+    nightVideo.crossOrigin = "anonymous";
+    lightVideo.crossOrigin = "anonymous";
+
+    // Error handling
+    nightVideo.onerror = () => console.error("Night video failed to load");
+    lightVideo.onerror = () => console.error("Light video failed to load");
+
+    nightVideo.onloadedmetadata = () => {
+      console.log("Night video loaded");
+      nightVideo.play().catch(e => console.error("Night video play error:", e));
+    };
+    lightVideo.onloadedmetadata = () => {
+      console.log("Light video loaded");
+      lightVideo.play().catch(e => console.error("Light video play error:", e));
+    };
 
     nightVideo.src = "/images/ночь.mp4";
     lightVideo.src = "/images/свет.mp4";
