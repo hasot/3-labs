@@ -99,6 +99,28 @@ export default function BatSignalPage() {
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
+      // Draw crosshair inside spotlight circle
+      ctx.strokeStyle = "rgba(255, 255, 200, 0.4)";
+      ctx.lineWidth = 2;
+
+      // Vertical line
+      ctx.beginPath();
+      ctx.moveTo(mouseX, mouseY - spotlightRadius);
+      ctx.lineTo(mouseX, mouseY + spotlightRadius);
+      ctx.stroke();
+
+      // Horizontal line
+      ctx.beginPath();
+      ctx.moveTo(mouseX - spotlightRadius, mouseY);
+      ctx.lineTo(mouseX + spotlightRadius, mouseY);
+      ctx.stroke();
+
+      // Center dot
+      ctx.fillStyle = "rgba(255, 255, 200, 0.6)";
+      ctx.beginPath();
+      ctx.arc(mouseX, mouseY, 3, 0, Math.PI * 2);
+      ctx.fill();
+
       requestAnimationFrame(drawFrame);
     };
 
