@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 
 export default function BatSignalPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const nightImageRef = useRef<HTMLImageElement | null>(null);
-  const lightImageRef = useRef<HTMLImageElement | null>(null);
+  const nightVideoRef = useRef<HTMLVideoElement | null>(null);
+  const lightVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -18,21 +18,22 @@ export default function BatSignalPage() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Load images
-    const nightImg = new Image();
-    const lightImg = new Image();
+    // Create video elements
+    const nightVideo = document.createElement("video");
+    const lightVideo = document.createElement("video");
 
-    nightImg.onload = () => {
-      nightImageRef.current = nightImg;
-      drawFrame();
-    };
-    lightImg.onload = () => {
-      lightImageRef.current = lightImg;
-      drawFrame();
-    };
+    nightVideo.autoplay = true;
+    nightVideo.loop = true;
+    nightVideo.muted = true;
+    lightVideo.autoplay = true;
+    lightVideo.loop = true;
+    lightVideo.muted = true;
 
-    nightImg.src = "/images/ночь.png";
-    lightImg.src = "/images/свет.png";
+    nightVideoRef.current = nightVideo;
+    lightVideoRef.current = lightVideo;
+
+    nightVideo.src = "/images/ночь.mp4";
+    lightVideo.src = "/images/свет.mp4";
 
     // Mouse position
     let mouseX = window.innerWidth / 2;
@@ -49,10 +50,10 @@ export default function BatSignalPage() {
     const lightSourceY = 50;
 
     const drawFrame = () => {
-      if (!nightImageRef.current || !lightImageRef.current) return;
+      if (!nightVideoRef.current || !lightVideoRef.current) return;
 
-      // Draw night image as base
-      ctx.drawImage(nightImageRef.current, 0, 0, canvas.width, canvas.height);
+      // Draw night video as base
+      ctx.drawImage(nightVideoRef.current, 0, 0, canvas.width, canvas.height);
 
       // Draw light beam from source to mouse (subtle cone)
       const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
@@ -75,12 +76,14 @@ export default function BatSignalPage() {
       ctx.arc(mouseX, mouseY, spotlightRadius, 0, Math.PI * 2);
       ctx.clip();
 
-      // Draw light image inside spotlight
-      ctx.drawImage(lightImageRef.current, 0, 0, canvas.width, canvas.height);
+      // Draw light video inside spotlight
+      ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
       requestAnimationFrame(drawFrame);
     };
+
+    drawFrame();
 
     // Handle window resize
     const handleResize = () => {
@@ -115,7 +118,7 @@ export default function BatSignalPage() {
       <div className="absolute bottom-8 left-8 text-slate-400 text-sm max-w-80 z-10">
         <p>Move your mouse to control the bat signal light mask.</p>
         <p className="mt-2 text-xs opacity-70">
-          The light reveals the bright image under the dark night.
+          The light reveals the bright video under the dark night.
         </p>
       </div>
     </div>
