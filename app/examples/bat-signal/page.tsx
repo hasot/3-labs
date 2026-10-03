@@ -63,7 +63,7 @@ export default function BatSignalPage() {
     // Mouse position
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
-    const spotlightRadius = 70;
+    const baseSpotlightRadius = 120;
 
     document.addEventListener("mousemove", (e) => {
       mouseX = e.clientX;
@@ -95,17 +95,17 @@ export default function BatSignalPage() {
 
       // Dynamic cone width based on direction - distorts when pointing left, circular when pointing right
       const angleX = dirX; // -1 (left) to 1 (right)
-      const baseWidth = 120;
-      const coneWidth = baseWidth + angleX * 180; // Gets narrower going left, wider going right
+      const baseWidth = 140;
+      const coneWidth = baseWidth + angleX * 220; // Gets narrower going left, wider going right
 
-      // Draw cone shape
+      // Draw cone shape with enhanced intensity
       const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
-      gradient.addColorStop(0, "rgba(255, 255, 255, 0.01)");
-      gradient.addColorStop(0.5, "rgba(255, 255, 200, 0.08)");
-      gradient.addColorStop(1, "rgba(255, 255, 200, 0.12)");
+      gradient.addColorStop(0, "rgba(255, 255, 255, 0.02)");
+      gradient.addColorStop(0.3, "rgba(255, 255, 200, 0.12)");
+      gradient.addColorStop(1, "rgba(255, 255, 200, 0.18)");
 
       ctx.fillStyle = gradient;
-      ctx.globalAlpha = 0.25;
+      ctx.globalAlpha = 0.35;
 
       // Cone triangle from source to mouse point
       ctx.beginPath();
@@ -117,10 +117,13 @@ export default function BatSignalPage() {
 
       ctx.globalAlpha = 1;
 
-      // Create circular mask for spotlight
+      // Create elliptical mask for spotlight that changes shape with direction
+      const spotlightRadiusX = baseSpotlightRadius + angleX * 40; // Wider when pointing right
+      const spotlightRadiusY = baseSpotlightRadius * (1 - Math.abs(angleX) * 0.3); // Taller when pointing center/left
+
       ctx.save();
       ctx.beginPath();
-      ctx.arc(mouseX, mouseY, spotlightRadius, 0, Math.PI * 2);
+      ctx.ellipse(mouseX, mouseY, spotlightRadiusX, spotlightRadiusY, Math.atan2(dy, dx), 0, Math.PI * 2);
       ctx.clip();
 
       // Draw light video inside spotlight
