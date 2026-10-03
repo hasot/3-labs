@@ -98,7 +98,11 @@ export default function BatSignalPage() {
       const baseWidth = 200;
       const coneWidth = baseWidth + angleX * 280; // Gets narrower going left, wider going right
 
-      // Draw cone shape with enhanced intensity
+      // Lantern size
+      const lanternSize = 60;
+      const lanternHalfSize = lanternSize / 2;
+
+      // Draw cone shape from lantern edges
       const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
       gradient.addColorStop(0, "rgba(255, 255, 255, 0.03)");
       gradient.addColorStop(0.3, "rgba(255, 255, 200, 0.16)");
@@ -107,15 +111,38 @@ export default function BatSignalPage() {
       ctx.fillStyle = gradient;
       ctx.globalAlpha = 0.5;
 
-      // Cone triangle from source to mouse point
+      // Cone from lantern rectangle edges (not single point)
       ctx.beginPath();
-      ctx.moveTo(lightSourceX, lightSourceY);
+      // Top-left corner of lantern
+      ctx.moveTo(lightSourceX - lanternHalfSize, lightSourceY - lanternHalfSize);
+      // Top-right corner
+      ctx.lineTo(lightSourceX + lanternHalfSize, lightSourceY - lanternHalfSize);
+      // To upper-right of mouse point
       ctx.lineTo(mouseX + perpX * coneWidth, mouseY + perpY * coneWidth);
+      // To upper-left of mouse point
       ctx.lineTo(mouseX - perpX * coneWidth, mouseY - perpY * coneWidth);
       ctx.closePath();
       ctx.fill();
 
       ctx.globalAlpha = 1;
+
+      // Draw visible lantern rectangle
+      ctx.fillStyle = "rgba(50, 50, 50, 0.8)";
+      ctx.fillRect(
+        lightSourceX - lanternHalfSize,
+        lightSourceY - lanternHalfSize,
+        lanternSize,
+        lanternSize
+      );
+
+      // Lantern glow when not lit by spotlight
+      ctx.fillStyle = "rgba(255, 180, 80, 0.4)";
+      ctx.fillRect(
+        lightSourceX - lanternHalfSize,
+        lightSourceY - lanternHalfSize,
+        lanternSize,
+        lanternSize
+      );
 
       // Create elliptical mask for spotlight that changes shape with direction
       const spotlightRadiusX = baseSpotlightRadius + angleX * 40; // Wider when pointing right
