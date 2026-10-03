@@ -63,16 +63,16 @@ export default function BatSignalPage() {
     // Mouse position
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
-    const baseSpotlightRadius = 350;
+    const baseSpotlightRadius = 90;
 
     document.addEventListener("mousemove", (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
     });
 
-    // Light source position (bottom right corner)
+    // Light source position (right side, higher up - at lantern level)
     const lightSourceX = canvas.width - 80;
-    const lightSourceY = canvas.height - 80;
+    const lightSourceY = canvas.height - 250;
 
     const drawFrame = () => {
       if (!nightVideoRef.current || !lightVideoRef.current) return;
