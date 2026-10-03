@@ -92,7 +92,11 @@ export default function BatSignalPage() {
       // Perpendicular vector for cone width
       const perpX = -dirY;
       const perpY = dirX;
-      const coneWidth = 150;
+
+      // Dynamic cone width based on direction - distorts when pointing left, circular when pointing right
+      const angleX = dirX; // -1 (left) to 1 (right)
+      const baseWidth = 120;
+      const coneWidth = baseWidth + angleX * 180; // Gets narrower going left, wider going right
 
       // Draw cone shape
       const gradient = ctx.createLinearGradient(lightSourceX, lightSourceY, mouseX, mouseY);
