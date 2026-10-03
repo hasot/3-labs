@@ -111,16 +111,42 @@ export default function BatSignalPage() {
       ctx.fillStyle = gradient;
       ctx.globalAlpha = 0.5;
 
-      // Cone from lantern rectangle edges (not single point)
+      // Cone from all 4 corners of lantern rectangle
       ctx.beginPath();
-      // Top-left corner of lantern
+      // Start from top-left corner
       ctx.moveTo(lightSourceX - lanternHalfSize, lightSourceY - lanternHalfSize);
-      // Top-right corner
+      // Line to top-right corner
       ctx.lineTo(lightSourceX + lanternHalfSize, lightSourceY - lanternHalfSize);
-      // To upper-right of mouse point
-      ctx.lineTo(mouseX + perpX * coneWidth, mouseY + perpY * coneWidth);
-      // To upper-left of mouse point
-      ctx.lineTo(mouseX - perpX * coneWidth, mouseY - perpY * coneWidth);
+
+      // Expand cone width based on distance and direction
+      const expandFactor = distance / 200; // Cone expands with distance
+      const expandedConeWidth = coneWidth * (1 + expandFactor * 0.5);
+
+      // To far top-right
+      ctx.lineTo(
+        mouseX + perpX * expandedConeWidth,
+        mouseY + perpY * expandedConeWidth
+      );
+      // To far bottom-right (bottom right corner expanded)
+      ctx.lineTo(
+        lightSourceX + lanternHalfSize + perpX * expandedConeWidth,
+        lightSourceY + lanternHalfSize + perpY * expandedConeWidth
+      );
+      // To bottom-right corner of lantern
+      ctx.lineTo(lightSourceX + lanternHalfSize, lightSourceY + lanternHalfSize);
+      // To bottom-left corner of lantern
+      ctx.lineTo(lightSourceX - lanternHalfSize, lightSourceY + lanternHalfSize);
+      // To far bottom-left (bottom left expanded)
+      ctx.lineTo(
+        lightSourceX - lanternHalfSize - perpX * expandedConeWidth,
+        lightSourceY + lanternHalfSize - perpY * expandedConeWidth
+      );
+      // To far top-left
+      ctx.lineTo(
+        mouseX - perpX * expandedConeWidth,
+        mouseY - perpY * expandedConeWidth
+      );
+
       ctx.closePath();
       ctx.fill();
 
