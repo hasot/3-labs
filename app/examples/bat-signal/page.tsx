@@ -57,7 +57,7 @@ export default function BatSignalPage() {
 
     // Load bat logo
     const batLogo = new Image();
-    batLogo.src = "/images/bat-logo.svg";
+    batLogo.src = "/images/bat-logo-new.svg";
     batLogoRef.current = batLogo;
 
     // Mouse position
@@ -98,31 +98,9 @@ export default function BatSignalPage() {
       const baseWidth = 200;
       const coneWidth = baseWidth + angleX * 280; // Gets narrower going left, wider going right
 
-      // Lantern size
-      const lanternSize = 60;
-      const lanternHalfSize = lanternSize / 2;
-
-      // Draw visible lantern rectangle
-      ctx.fillStyle = "rgba(50, 50, 50, 0.8)";
-      ctx.fillRect(
-        lightSourceX - lanternHalfSize,
-        lightSourceY - lanternHalfSize,
-        lanternSize,
-        lanternSize
-      );
-
-      // Lantern glow when not lit by spotlight
-      ctx.fillStyle = "rgba(255, 180, 80, 0.4)";
-      ctx.fillRect(
-        lightSourceX - lanternHalfSize,
-        lightSourceY - lanternHalfSize,
-        lanternSize,
-        lanternSize
-      );
-
-      // Create elliptical mask for spotlight that changes shape with direction
-      const spotlightRadiusX = baseSpotlightRadius + angleX * 40; // Wider when pointing right
-      const spotlightRadiusY = baseSpotlightRadius * (1 - Math.abs(angleX) * 0.3); // Taller when pointing center/left
+      // Create elliptical mask for spotlight (oval shape - wider than tall)
+      const spotlightRadiusX = baseSpotlightRadius * 1.5; // Wider
+      const spotlightRadiusY = baseSpotlightRadius * 0.7; // Narrower (more oval)
 
       ctx.save();
       ctx.beginPath();
@@ -132,6 +110,20 @@ export default function BatSignalPage() {
       // Draw light video inside spotlight
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
+
+      // Draw bat logo in center with transparency
+      if (batLogoRef.current && batLogoRef.current.complete) {
+        const logoSize = baseSpotlightRadius * 1.2;
+        ctx.globalAlpha = 0.1;
+        ctx.drawImage(
+          batLogoRef.current,
+          mouseX - logoSize / 2,
+          mouseY - logoSize / 2,
+          logoSize,
+          logoSize
+        );
+        ctx.globalAlpha = 1;
+      }
 
       requestAnimationFrame(drawFrame);
     };
