@@ -105,15 +105,9 @@ export default function BatSignalPage() {
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Draw light oval background for bat logo
-      ctx.fillStyle = "rgba(255, 255, 200, 0.9)";
-      ctx.beginPath();
-      ctx.ellipse(mouseX, mouseY, spotlightRadius * 1.2, spotlightRadius * 1.4, 0, 0, Math.PI * 2);
-      ctx.fill();
-
       // Draw bat logo in center of spotlight
       if (batLogoRef.current && batLogoRef.current.complete) {
-        const logoSize = spotlightRadius * 1.3;
+        const logoSize = spotlightRadius * 1.5;
         ctx.drawImage(
           batLogoRef.current,
           mouseX - logoSize / 2,
