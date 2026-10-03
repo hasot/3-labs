@@ -105,18 +105,6 @@ export default function BatSignalPage() {
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Draw bat logo in center of spotlight
-      if (batLogoRef.current && batLogoRef.current.complete) {
-        const logoSize = spotlightRadius * 1.5;
-        ctx.drawImage(
-          batLogoRef.current,
-          mouseX - logoSize / 2,
-          mouseY - logoSize / 2,
-          logoSize,
-          logoSize
-        );
-      }
-
       requestAnimationFrame(drawFrame);
     };
 
