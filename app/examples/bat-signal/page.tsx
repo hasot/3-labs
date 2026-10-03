@@ -107,11 +107,36 @@ export default function BatSignalPage() {
       ctx.fillStyle = gradient;
       ctx.globalAlpha = 0.5;
 
-      // Cone triangle from source to mouse point
+      // Cone with smooth curved edges from source to mouse point
       ctx.beginPath();
       ctx.moveTo(lightSourceX, lightSourceY);
-      ctx.lineTo(mouseX + perpX * coneWidth, mouseY + perpY * coneWidth);
-      ctx.lineTo(mouseX - perpX * coneWidth, mouseY - perpY * coneWidth);
+
+      // Right edge with curve
+      const midX = (lightSourceX + mouseX) / 2;
+      const midY = (lightSourceY + mouseY) / 2;
+      ctx.quadraticCurveTo(
+        midX + perpX * coneWidth * 0.5,
+        midY + perpY * coneWidth * 0.5,
+        mouseX + perpX * coneWidth,
+        mouseY + perpY * coneWidth
+      );
+
+      // Bottom edge back to source
+      ctx.quadraticCurveTo(
+        midX,
+        midY,
+        lightSourceX,
+        lightSourceY
+      );
+
+      // Left edge with curve
+      ctx.quadraticCurveTo(
+        midX - perpX * coneWidth * 0.5,
+        midY - perpY * coneWidth * 0.5,
+        mouseX - perpX * coneWidth,
+        mouseY - perpY * coneWidth
+      );
+
       ctx.closePath();
       ctx.fill();
 
