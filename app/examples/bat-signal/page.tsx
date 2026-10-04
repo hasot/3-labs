@@ -111,18 +111,6 @@ export default function BatSignalPage() {
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Draw glow/halo around spotlight
-      const glowRadius = baseSpotlightRadius * 2.5;
-      const glowGradient = ctx.createRadialGradient(mouseX, mouseY, baseSpotlightRadius, mouseX, mouseY, glowRadius);
-      glowGradient.addColorStop(0, "rgba(255, 255, 200, 0.15)");
-      glowGradient.addColorStop(0.5, "rgba(255, 255, 200, 0.05)");
-      glowGradient.addColorStop(1, "rgba(255, 255, 200, 0)");
-
-      ctx.fillStyle = glowGradient;
-      ctx.beginPath();
-      ctx.arc(mouseX, mouseY, glowRadius, 0, Math.PI * 2);
-      ctx.fill();
-
       requestAnimationFrame(drawFrame);
     };
 
