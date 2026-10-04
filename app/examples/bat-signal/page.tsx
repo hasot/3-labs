@@ -98,9 +98,9 @@ export default function BatSignalPage() {
       const baseWidth = 200;
       const coneWidth = baseWidth + angleX * 280; // Gets narrower going left, wider going right
 
-      // Create elliptical mask for spotlight (oval shape - wider than tall)
-      const spotlightRadiusX = baseSpotlightRadius * 1.5; // Wider
-      const spotlightRadiusY = baseSpotlightRadius * 0.7; // Narrower (more oval)
+      // Create circular mask for spotlight
+      const spotlightRadiusX = baseSpotlightRadius;
+      const spotlightRadiusY = baseSpotlightRadius;
 
       ctx.save();
       ctx.beginPath();
@@ -110,21 +110,6 @@ export default function BatSignalPage() {
       // Draw light video inside spotlight
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
-
-      // Draw bat logo in center with transparency (stretched to oval shape)
-      if (batLogoRef.current && batLogoRef.current.complete) {
-        const logoWidth = spotlightRadiusX * 1.6;
-        const logoHeight = spotlightRadiusY * 1.6;
-        ctx.globalAlpha = 0.1;
-        ctx.drawImage(
-          batLogoRef.current,
-          mouseX - logoWidth / 2,
-          mouseY - logoHeight / 2,
-          logoWidth,
-          logoHeight
-        );
-        ctx.globalAlpha = 1;
-      }
 
       requestAnimationFrame(drawFrame);
     };
