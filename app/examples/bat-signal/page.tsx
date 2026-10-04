@@ -341,6 +341,10 @@ export default function BatSignalPage() {
         ref={canvasRef}
         className="absolute inset-0 w-full h-full cursor-pointer"
       />
+
+      <h1 className="absolute top-8 left-8 z-10 font-display text-4xl font-semibold tracking-[0.2em] text-slate-100/90 pointer-events-none select-none">
+        YUNKOV
+      </h1>
     </div>
   );
 }
