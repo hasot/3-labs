@@ -111,25 +111,18 @@ export default function BatSignalPage() {
       ctx.drawImage(lightVideoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Draw bat logo in center with transparency (oval shape)
+      // Draw bat logo in center with transparency (stretched to oval shape)
       if (batLogoRef.current && batLogoRef.current.complete) {
-        const logoWidth = spotlightRadiusX * 1.8;
-        const logoHeight = spotlightRadiusY * 1.8;
+        const logoWidth = spotlightRadiusX * 1.6;
+        const logoHeight = spotlightRadiusY * 1.6;
         ctx.globalAlpha = 0.1;
-
-        // Transform and draw stretched oval logo
-        ctx.save();
-        ctx.translate(mouseX, mouseY);
-        ctx.scale(logoWidth / logoHeight, 1);
         ctx.drawImage(
           batLogoRef.current,
-          -logoHeight / 2,
-          -logoHeight / 2,
-          logoHeight,
+          mouseX - logoWidth / 2,
+          mouseY - logoHeight / 2,
+          logoWidth,
           logoHeight
         );
-        ctx.restore();
-
         ctx.globalAlpha = 1;
       }
 
