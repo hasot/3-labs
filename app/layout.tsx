@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Faustina, Geist, Geist_Mono } from "next/font/google";
+import { Cinzel, Faustina, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,6 +17,11 @@ const faustina = Faustina({
   subsets: ["latin"],
 });
 
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "3D Labs",
   description: "Three.js learning laboratory with React Three Fiber",
@@ -30,7 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${faustina.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${faustina.variable} ${cinzel.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-slate-950 text-slate-50">{children}</body>
     </html>
