@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BAT_LOGO_SRC, BASE_PATH, batMaskStyle } from "./bat-logo";
+import { BatLoader } from "./BatLoader";
 
-// Prefix for public assets when the site is served from a subpath (GitHub Pages)
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+// Debug: keeps the loader on screen
+const HOLD_LOADER = false;
 
 // Light source in the source video, normalized to the video frame (measured on 3840x2160)
 const LIGHT_SOURCES = {
@@ -36,7 +38,6 @@ const MAX_DPR = 2;
 const LIGHT_RGB = "225, 235, 255";
 
 // Stencil on the lens: its silhouette is cast as a shadow inside the spot
-const BAT_LOGO_SRC = `${BASE_PATH}/images/bat-logo.svg`;
 const BAT_SIZE = 1.25; // logo width relative to the spot radius
 const BAT_SHADOW = 0.35; // how much light the stencil blocks
 const BAT_BLUR = 0.03; // edge softness relative to the logo width (projection is never razor-sharp)
@@ -111,7 +112,6 @@ export default function BatSignalPage() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [menuOpen]);
 
-  const batMask = `url(${BAT_LOGO_SRC})`;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -627,16 +627,7 @@ export default function BatSignalPage() {
         >
           <span
             className="block h-5 w-11 bg-slate-100/85 transition-colors group-hover:bg-white"
-            style={{
-              maskImage: batMask,
-              WebkitMaskImage: batMask,
-              maskSize: "contain",
-              WebkitMaskSize: "contain",
-              maskRepeat: "no-repeat",
-              WebkitMaskRepeat: "no-repeat",
-              maskPosition: "center",
-              WebkitMaskPosition: "center",
-            }}
+            style={batMaskStyle}
           />
         </a>
 
@@ -685,6 +676,9 @@ export default function BatSignalPage() {
           </button>
         </div>
       </header>
+
+      {/* Until the first video frame is ready */}
+      <BatLoader visible={HOLD_LOADER || !sceneReady} />
 
       {/* Fullscreen menu */}
       <div

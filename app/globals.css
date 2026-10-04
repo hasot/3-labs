@@ -17,6 +17,103 @@
 @theme {
   --animate-logo-reveal: logo-reveal 1.8s ease-out both;
 
+  /* Loader batarang: 3s smooth loop through its home point, then a 1s rest when caught */
+  --animate-batarang-flight: batarang-flight 4s linear infinite;
+  --animate-batarang-spin: batarang-spin 4s infinite;
+
+  /* Points sample the ellipse x = 6.5vw * sin(t), y = -2.75vh * (1 - cos(t)), with t eased
+     so it leaves and lands softly. Far end of the loop: smaller and tilted flat, as if
+     flying away. */
+  @keyframes batarang-flight {
+    0% {
+      transform: translate(0vw, 0vh) scale(1) rotateX(0deg);
+    }
+    3.125% {
+      transform: translate(0.175vw, -0.001vh) scale(1) rotateX(0.009deg);
+    }
+    6.25% {
+      transform: translate(0.694vw, -0.016vh) scale(0.999) rotateX(0.143deg);
+    }
+    9.375% {
+      transform: translate(1.54vw, -0.078vh) scale(0.996) rotateX(0.711deg);
+    }
+    12.5% {
+      transform: translate(2.656vw, -0.24vh) scale(0.989) rotateX(2.182deg);
+    }
+    15.625% {
+      transform: translate(3.93vw, -0.559vh) scale(0.975) rotateX(5.086deg);
+    }
+    18.75% {
+      transform: translate(5.172vw, -1.084vh) scale(0.951) rotateX(9.858deg);
+    }
+    21.875% {
+      transform: translate(6.124vw, -1.829vh) scale(0.917) rotateX(16.623deg);
+    }
+    25% {
+      transform: translate(6.5vw, -2.75vh) scale(0.875) rotateX(25deg);
+    }
+    28.125% {
+      transform: translate(6.064vw, -3.741vh) scale(0.83) rotateX(34.007deg);
+    }
+    31.25% {
+      transform: translate(4.722vw, -4.64vh) scale(0.789) rotateX(42.181deg);
+    }
+    34.375% {
+      transform: translate(2.591vw, -5.272vh) scale(0.76) rotateX(47.927deg);
+    }
+    37.5% {
+      transform: translate(0vw, -5.5vh) scale(0.75) rotateX(50deg);
+    }
+    40.625% {
+      transform: translate(-2.591vw, -5.272vh) scale(0.76) rotateX(47.927deg);
+    }
+    43.75% {
+      transform: translate(-4.722vw, -4.64vh) scale(0.789) rotateX(42.181deg);
+    }
+    46.875% {
+      transform: translate(-6.064vw, -3.741vh) scale(0.83) rotateX(34.007deg);
+    }
+    50% {
+      transform: translate(-6.5vw, -2.75vh) scale(0.875) rotateX(25deg);
+    }
+    53.125% {
+      transform: translate(-6.124vw, -1.829vh) scale(0.917) rotateX(16.623deg);
+    }
+    56.25% {
+      transform: translate(-5.172vw, -1.084vh) scale(0.951) rotateX(9.858deg);
+    }
+    59.375% {
+      transform: translate(-3.93vw, -0.559vh) scale(0.975) rotateX(5.086deg);
+    }
+    62.5% {
+      transform: translate(-2.656vw, -0.24vh) scale(0.989) rotateX(2.182deg);
+    }
+    65.625% {
+      transform: translate(-1.54vw, -0.078vh) scale(0.996) rotateX(0.711deg);
+    }
+    68.75% {
+      transform: translate(-0.694vw, -0.016vh) scale(0.999) rotateX(0.143deg);
+    }
+    71.875% {
+      transform: translate(-0.175vw, -0.001vh) scale(1) rotateX(0.009deg);
+    }
+    75%,
+    100% {
+      transform: translate(0vw, 0vh) scale(1) rotateX(0deg);
+    }
+  }
+
+  @keyframes batarang-spin {
+    0% {
+      transform: rotate(0deg);
+      animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+    75%,
+    100% {
+      transform: rotate(2160deg);
+    }
+  }
+
   /* Caught by the beam: flares up, then settles with a faint afterglow */
   @keyframes logo-reveal {
     0% {
