@@ -22,6 +22,12 @@ const FOLLOW = 0.12;
 // Beam is soft, so it is rendered at reduced resolution
 const BEAM_SCALE = 0.5;
 
+// Aiming close to the lens means the projector faces the viewer: the cone can't
+// open wider than this, and the beam fades out as the spot covers the source
+const MAX_BEAM_HALF_ANGLE = 0.2; // rad
+const BEAM_FADE_NEAR = 0.8; // beam gone when spot center is this many spot radii from the lens
+const BEAM_FADE_FAR = 2.5; // full beam from this many spot radii
+
 // Cap for the canvas pixel ratio: 3x screens would cost a lot for no visible gain
 const MAX_DPR = 2;
 
@@ -221,7 +227,7 @@ export default function BatSignalPage() {
       if (lensLight <= 0.001) return;
 
       // 1. Volumetric beam: a cone from the lens to the spot, lit fog in the air
-      const halfAngle = Math.atan2(spotR - lensR, dist);
+      const halfAngle = Math.min(Math.atan2(spotR - lensR, dist), MAX_BEAM_HALF_ANGLE);
       const apexBack = lensR / Math.tan(halfAngle); // virtual cone apex behind the lens
       const feather = halfAngle * 1.5;
       const span = feather / Math.PI; // 2 * feather as a fraction of a full turn
@@ -259,7 +265,12 @@ export default function BatSignalPage() {
       castBatShadow(beamCtx, "destination-out");
 
       ctx.globalCompositeOperation = "screen";
-      ctx.globalAlpha = flicker * light;
+      const nearT = Math.min(
+        Math.max((dist / spotR - BEAM_FADE_NEAR) / (BEAM_FADE_FAR - BEAM_FADE_NEAR), 0),
+        1,
+      );
+      const beamVisibility = nearT * nearT * (3 - 2 * nearT);
+      ctx.globalAlpha = flicker * light * beamVisibility;
       ctx.drawImage(beamCanvas, 0, 0, W, H);
 
       // 2. Spot: reveal the lit video through a soft elliptical mask. Inside the light
