@@ -63,7 +63,7 @@ export default function BatSignalPage() {
     // Mouse position
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
-    const baseSpotlightRadius = 112;
+    const baseSpotlightRadius = 90;
 
     document.addEventListener("mousemove", (e) => {
       mouseX = e.clientX;
@@ -98,9 +98,9 @@ export default function BatSignalPage() {
       const baseWidth = 200;
       const coneWidth = baseWidth + angleX * 280; // Gets narrower going left, wider going right
 
-      // Create circular mask for spotlight
-      const spotlightRadiusX = baseSpotlightRadius;
-      const spotlightRadiusY = baseSpotlightRadius;
+      // Create elliptical mask for spotlight that changes shape with direction
+      const spotlightRadiusX = baseSpotlightRadius + angleX * 40; // Wider when pointing right
+      const spotlightRadiusY = baseSpotlightRadius * (1 - Math.abs(angleX) * 0.3); // Taller when pointing center/left
 
       ctx.save();
       ctx.beginPath();
