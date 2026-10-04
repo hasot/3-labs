@@ -5,8 +5,12 @@ import { useEffect, useRef } from "react";
 // Prefix for public assets when the site is served from a subpath (GitHub Pages)
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-// Projector lens in the source video, normalized to the video frame (measured on 3840x2160)
-const LENS = { x: 0.93, y: 0.811, r: 0.005 };
+// Light source in the source video, normalized to the video frame (measured on 3840x2160)
+const LIGHT_SOURCES = {
+  rooftop: { x: 0.93, y: 0.811, r: 0.005 }, // projector on the right rooftop
+  tower: { x: 0.5974, y: 0.6102, r: 0.0025 }, // spire tip in the distance (test)
+};
+const LENS = LIGHT_SOURCES.tower;
 
 // Cone spread: spot radius grows by this many px per px of distance from the lens
 const BEAM_SPREAD = 0.075;
