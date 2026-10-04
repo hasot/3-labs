@@ -20,6 +20,9 @@ const LENS = LIGHT_SOURCES.deep;
 const BEAM_SPREAD = 0.09;
 const MIN_SPOT_RADIUS = 66;
 
+// Where the spot points before the cursor moves, of the viewport
+const START_AIM = { x: 0.16, y: 0.22 };
+
 // Heavy projector head: the spot follows the cursor with inertia
 const FOLLOW = 0.12;
 
@@ -305,14 +308,18 @@ export default function BatSignalPage() {
     };
     batLogo.src = BAT_LOGO_SRC;
 
-    let mouseX = W * 0.35;
-    let mouseY = H * 0.3;
+    let mouseX = W * START_AIM.x;
+    let mouseY = H * START_AIM.y;
     let spotX = mouseX;
     let spotY = mouseY;
+
+    // Texts only take paint once the user aims, so nothing glows at the start position
+    let userAimed = false;
 
     const handlePointerMove = (e: PointerEvent) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
+      userAimed = true;
     };
 
     let lightOn = true;
@@ -417,7 +424,7 @@ export default function BatSignalPage() {
       const markR = spotR * GLOW_REACH;
       const overlaps = (box: Box, x: number, y: number, r: number) =>
         x + r > box.x && x - r < box.x + box.w && y + r > box.y && y - r < box.y + box.h;
-      if (light > 0.5 && glowTexts.some((t) => overlaps(t.box, spotX, spotY, markR))) {
+      if (userAimed && light > 0.5 && glowTexts.some((t) => overlaps(t.box, spotX, spotY, markR))) {
         const last = glowMarks[glowMarks.length - 1];
         if (last && Math.hypot(spotX - last.x, spotY - last.y) < markR * 0.1) {
           last.t = time;
@@ -687,6 +694,34 @@ export default function BatSignalPage() {
           </button>
         </div>
       </header>
+
+      {/* Hint that the scene is clickable (toggles the light). Mouse-only devices;
+          clicks pass through to the canvas. */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute bottom-6 right-6 z-20 transition-opacity delay-[1500ms] duration-1000 sm:bottom-8 sm:right-10 [@media(pointer:coarse)]:hidden ${
+          sceneReady ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <svg width="18" height="28" viewBox="0 0 18 28" fill="none" className="text-slate-100/45">
+          <rect
+            x="0.75"
+            y="0.75"
+            width="16.5"
+            height="26.5"
+            rx="8.25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M9 1v9" stroke="currentColor" strokeWidth="1.5" />
+          {/* Left button, "pressed" on a loop */}
+          <path
+            d="M8.25 1.5A7.5 7.5 0 0 0 1.5 9v1h6.75z"
+            fill="currentColor"
+            className="motion-safe:animate-mouse-click"
+          />
+        </svg>
+      </div>
 
       {/* Until the first video frame is ready */}
       <BatLoader visible={HOLD_LOADER || !sceneReady} />

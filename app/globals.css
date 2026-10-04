@@ -16,6 +16,22 @@
 
 @theme {
   --animate-logo-reveal: logo-reveal 1.8s ease-out both;
+  --animate-mouse-click: mouse-click 2.4s ease-in-out infinite;
+
+  /* Click hint: the left button flashes as if pressed */
+  @keyframes mouse-click {
+    0%,
+    55%,
+    100% {
+      opacity: 0;
+    }
+    62% {
+      opacity: 1;
+    }
+    78% {
+      opacity: 0;
+    }
+  }
 
   /* Loader batarang: 3s smooth loop through its home point, then a 1s rest when caught */
   --animate-batarang-flight: batarang-flight 4s linear infinite;
