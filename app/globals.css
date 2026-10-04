@@ -11,6 +11,27 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-faustina);
+  --font-heading: var(--font-cinzel);
+}
+
+@theme {
+  --animate-logo-reveal: logo-reveal 1.8s ease-out both;
+
+  /* Caught by the beam: flares up, then settles with a faint afterglow */
+  @keyframes logo-reveal {
+    0% {
+      opacity: 0;
+      filter: drop-shadow(0 0 0 rgb(225 235 255 / 0)) brightness(1);
+    }
+    30% {
+      opacity: 1;
+      filter: drop-shadow(0 0 14px rgb(225 235 255 / 0.9)) brightness(1.8);
+    }
+    100% {
+      opacity: 1;
+      filter: drop-shadow(0 0 4px rgb(225 235 255 / 0.3)) brightness(1);
+    }
+  }
 }
 
 @media (prefers-color-scheme: dark) {

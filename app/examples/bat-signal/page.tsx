@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Prefix for public assets when the site is served from a subpath (GitHub Pages)
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -54,28 +54,64 @@ const STRIKE_FLASHES: [until: number, level: number][] = [
   [270, 0.3],
 ];
 
-// Hero headline in "luminous paint": invisible until the beam sweeps over it. Wherever the
-// spot passes, the glyphs glow white-hot, hold the light for a while, then fade out.
-const HERO_TEXT = "BATMAN";
-const HERO_WIDTH = 0.72; // of the viewport width
-const HERO_MAX_HEIGHT = 0.24; // cap on the letter height, of the viewport height
+// Texts in "luminous paint": invisible until the beam sweeps over them. Wherever the spot
+// passes, the glyphs glow white-hot, hold the light for a while, then fade out.
+// Hero headline across the sky
+const HERO_TEXT = "GOTHAM";
+const HERO_WIDTH = 0.612; // of the viewport width
+const HERO_MAX_HEIGHT = 0.204; // cap on the letter height, of the viewport height
 const HERO_CENTER_Y = 0.34; // of the viewport height
 const HERO_TRACKING = 0.12; // letter spacing, em
 const HERO_WEIGHT = 700;
-const HERO_HALO_BLUR = 0.08; // of the font size
-const HERO_HALO_STRENGTH = 0.6;
+// Signature stacked in a column on the right
+const SIDE_TEXT = "YUNKOV";
+const SIDE_SIZE = 0.05; // font size, of the viewport height
+const SIDE_MAX_SIZE = 0.07; // cap on the font size, of the viewport width (narrow screens)
+const SIDE_LINE_HEIGHT = 1.25; // em
+const SIDE_CENTER_Y = 0.55; // of the viewport height
+const GLOW_HALO_BLUR = 0.08; // of the font size
+const GLOW_HALO_STRENGTH = 0.6;
 const GLOW_REACH = 0.9; // painted radius, of the spot radius
 const GLOW_HOLD_MS = 2500;
 const GLOW_FADE_MS = 1500;
 const GLOW_MASK_SCALE = 0.5; // the paint mask is soft, so it is kept at reduced resolution
 
+const NAV_LINKS = ["Gotham", "Arsenal", "Allies", "Signal"];
+
+// The nav logo is hidden until the beam finds it; once found it stays
+const LOGO_REVEAL_REACH = 0.8; // spot center within this many spot radii of the logo
+
 // Where the beam has been: each mark keeps the glyphs under it lit until it expires
 type GlowMark = { x: number; y: number; r: number; t: number };
+
+type Box = { x: number; y: number; w: number; h: number };
+// A glyph and its pen position inside the text's box, CSS px
+type Glyph = { char: string; x: number; baseline: number };
+// One painted text, cropped to its box: prerendered glyphs, the beam's paint mask, their product
+type GlowText = {
+  box: Box; // incl. halo padding, CSS px
+  glyphs: HTMLCanvasElement;
+  mask: HTMLCanvasElement;
+  glow: HTMLCanvasElement;
+};
 
 const smoothstep = (v: number) => v * v * (3 - 2 * v);
 
 export default function BatSignalPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const logoRef = useRef<HTMLAnchorElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false); // first video frame drawn: start the intro
+  const [logoFound, setLogoFound] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [menuOpen]);
+
+  const batMask = `url(${BAT_LOGO_SRC})`;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -84,19 +120,12 @@ export default function BatSignalPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Offscreen layers: light video masked by the spot, the volumetric beam, and for the
-    // headline (cropped to its box): prerendered glyphs, the beam's paint mask, their product
+    // Offscreen layers: light video masked by the spot, and the volumetric beam
     const spotCanvas = document.createElement("canvas");
     const spotCtx = spotCanvas.getContext("2d");
     const beamCanvas = document.createElement("canvas");
     const beamCtx = beamCanvas.getContext("2d");
-    const heroText = document.createElement("canvas");
-    const heroTextCtx = heroText.getContext("2d");
-    const glowMask = document.createElement("canvas");
-    const glowMaskCtx = glowMask.getContext("2d");
-    const heroGlow = document.createElement("canvas");
-    const heroGlowCtx = heroGlow.getContext("2d");
-    if (!spotCtx || !beamCtx || !heroTextCtx || !glowMaskCtx || !heroGlowCtx) return;
+    if (!spotCtx || !beamCtx) return;
 
     // Layout is in CSS px; the video layers are backed at device resolution so Retina
     // screens get the full video detail instead of an upscaled 1x canvas
@@ -108,56 +137,101 @@ export default function BatSignalPage() {
     const heroFamily =
       getComputedStyle(document.documentElement).getPropertyValue("--font-cinzel").trim() ||
       "serif";
-    const hero = { x: 0, y: 0, w: 0, h: 0 }; // headline box incl. halo padding, CSS px
+    const createGlowText = (): GlowText => ({
+      box: { x: 0, y: 0, w: 0, h: 0 },
+      glyphs: document.createElement("canvas"),
+      mask: document.createElement("canvas"),
+      glow: document.createElement("canvas"),
+    });
+    const hero = createGlowText();
+    const side = createGlowText();
+    const glowTexts = [hero, side];
     let glowMarks: GlowMark[] = [];
+    const font = (size: number) => `${HERO_WEIGHT} ${size}px ${heroFamily}`;
 
-    // Fits the headline to the sky and prerenders it: white glyphs over a blurred halo,
-    // on black, so the paint mask can simply be multiplied in
+    // Prerenders white glyphs over a blurred halo, on black, so the paint mask can simply
+    // be multiplied in. Drawn in device px: shadowBlur ignores transforms.
+    const prerender = (item: GlowText, glyphs: Glyph[], size: number) => {
+      const { box } = item;
+      item.glyphs.width = item.glow.width = Math.ceil(box.w * dpr);
+      item.glyphs.height = item.glow.height = Math.ceil(box.h * dpr);
+      item.mask.width = Math.ceil(box.w * GLOW_MASK_SCALE);
+      item.mask.height = Math.ceil(box.h * GLOW_MASK_SCALE);
+      const c = item.glyphs.getContext("2d");
+      if (!c) return;
+      const drawGlyphs = (offsetX: number) => {
+        for (const g of glyphs) c.fillText(g.char, g.x * dpr + offsetX, g.baseline * dpr);
+      };
+      c.fillStyle = "#000";
+      c.fillRect(0, 0, item.glyphs.width, item.glyphs.height);
+      c.font = font(size * dpr);
+      c.fillStyle = "#fff";
+      // Halo: glyphs off-canvas, only their blurred shadow lands
+      c.shadowColor = `rgba(${LIGHT_RGB}, ${GLOW_HALO_STRENGTH})`;
+      c.shadowBlur = size * GLOW_HALO_BLUR * dpr;
+      c.shadowOffsetX = item.glyphs.width;
+      drawGlyphs(-item.glyphs.width);
+      c.shadowColor = "transparent";
+      drawGlyphs(0);
+    };
+
+    // Headline fitted to the sky, centered
     const layoutHero = () => {
-      const font = (size: number) => `${HERO_WEIGHT} ${size}px ${heroFamily}`;
       const chars = HERO_TEXT.split("");
-      heroTextCtx.font = font(100);
-      const metrics = chars.map((c) => heroTextCtx.measureText(c));
-      const word = heroTextCtx.measureText(HERO_TEXT);
+      ctx.font = font(100);
+      const metrics = chars.map((c) => ctx.measureText(c));
+      const word = ctx.measureText(HERO_TEXT);
       const tracking = 100 * HERO_TRACKING;
       const advance = metrics.reduce((sum, m) => sum + m.width, 0) + tracking * (chars.length - 1);
       const inkHeight = word.actualBoundingBoxAscent + word.actualBoundingBoxDescent;
       const k = Math.min((W * HERO_WIDTH) / advance, (H * HERO_MAX_HEIGHT) / inkHeight);
       const size = 100 * k;
-      const blur = size * HERO_HALO_BLUR;
-      const pad = Math.ceil(blur * 2.5);
+      const pad = Math.ceil(size * GLOW_HALO_BLUR * 2.5);
 
-      hero.w = advance * k + pad * 2;
-      hero.h = inkHeight * k + pad * 2;
-      hero.x = (W - hero.w) / 2;
-      hero.y = H * HERO_CENTER_Y - hero.h / 2;
+      hero.box.w = advance * k + pad * 2;
+      hero.box.h = inkHeight * k + pad * 2;
+      hero.box.x = (W - hero.box.w) / 2;
+      hero.box.y = H * HERO_CENTER_Y - hero.box.h / 2;
 
-      heroText.width = heroGlow.width = Math.ceil(hero.w * dpr);
-      heroText.height = heroGlow.height = Math.ceil(hero.h * dpr);
-      glowMask.width = Math.ceil(hero.w * GLOW_MASK_SCALE);
-      glowMask.height = Math.ceil(hero.h * GLOW_MASK_SCALE);
-
-      // Drawn in device px: shadowBlur ignores transforms
-      const baseline = (pad + word.actualBoundingBoxAscent * k) * dpr;
-      const drawWord = (offsetX: number) => {
-        let x = pad * dpr + offsetX;
-        chars.forEach((c, i) => {
-          heroTextCtx.fillText(c, x, baseline);
-          x += (metrics[i].width + tracking) * k * dpr;
-        });
-      };
-      heroTextCtx.fillStyle = "#000";
-      heroTextCtx.fillRect(0, 0, heroText.width, heroText.height);
-      heroTextCtx.font = font(size * dpr);
-      heroTextCtx.fillStyle = "#fff";
-      // Halo: glyphs off-canvas, only their blurred shadow lands
-      heroTextCtx.shadowColor = `rgba(${LIGHT_RGB}, ${HERO_HALO_STRENGTH})`;
-      heroTextCtx.shadowBlur = blur * dpr;
-      heroTextCtx.shadowOffsetX = heroText.width;
-      drawWord(-heroText.width);
-      heroTextCtx.shadowColor = "transparent";
-      drawWord(0);
+      const baseline = pad + word.actualBoundingBoxAscent * k;
+      let x = pad;
+      const glyphs = chars.map((char, i) => {
+        const g = { char, x, baseline };
+        x += (metrics[i].width + tracking) * k;
+        return g;
+      });
+      prerender(hero, glyphs, size);
     };
+
+    // Signature stacked letter by letter, aligned with the header's right edge
+    const layoutSide = () => {
+      const chars = SIDE_TEXT.split("");
+      const size = Math.min(H * SIDE_SIZE, W * SIDE_MAX_SIZE);
+      ctx.font = font(size);
+      const metrics = chars.map((c) => ctx.measureText(c));
+      const ascent = ctx.measureText(SIDE_TEXT).actualBoundingBoxAscent;
+      const lineHeight = size * SIDE_LINE_HEIGHT;
+      const columnW = Math.max(...metrics.map((m) => m.width));
+      const columnH = lineHeight * (chars.length - 1) + ascent;
+      const pad = Math.ceil(size * GLOW_HALO_BLUR * 2.5);
+      const margin = W >= 640 ? 40 : 24; // matches the header padding
+
+      side.box.w = columnW + pad * 2;
+      side.box.h = columnH + pad * 2;
+      side.box.x = W - margin - columnW - pad;
+      side.box.y = H * SIDE_CENTER_Y - side.box.h / 2;
+
+      const glyphs = chars.map((char, i) => ({
+        char,
+        x: pad + (columnW - metrics[i].width) / 2,
+        baseline: pad + ascent + lineHeight * i,
+      }));
+      prerender(side, glyphs, size);
+    };
+
+    let logoRect: DOMRect | null = null;
+    let logoRevealed = false;
+    let sceneShown = false;
 
     const resize = () => {
       W = window.innerWidth;
@@ -170,6 +244,8 @@ export default function BatSignalPage() {
       // Resizing resets context state
       ctx.imageSmoothingQuality = spotCtx.imageSmoothingQuality = "high";
       layoutHero();
+      layoutSide();
+      logoRect = logoRef.current?.getBoundingClientRect() ?? null;
     };
     resize();
     let disposed = false;
@@ -257,6 +333,10 @@ export default function BatSignalPage() {
       const dt = Math.min(time - lastTime, 100);
       lastTime = time;
       if (nightVideo.readyState < 2 || lightVideo.readyState < 2) return;
+      if (!sceneShown) {
+        sceneShown = true;
+        setSceneReady(true);
+      }
 
       if (lightOn) {
         power = Math.min(1, power + dt / WARM_UP_MS);
@@ -315,13 +395,19 @@ export default function BatSignalPage() {
 
       // Headline paint: while lit, the spot leaves a mark wherever it touches the headline.
       // A spot resting in place refreshes its last mark instead of piling up new ones.
+      if (!logoRevealed && logoRect && light > 0.5) {
+        const nearestX = Math.min(Math.max(spotX, logoRect.left), logoRect.right);
+        const nearestY = Math.min(Math.max(spotY, logoRect.top), logoRect.bottom);
+        if (Math.hypot(spotX - nearestX, spotY - nearestY) < spotR * LOGO_REVEAL_REACH) {
+          logoRevealed = true;
+          setLogoFound(true);
+        }
+      }
+
       const markR = spotR * GLOW_REACH;
-      const touchesHero =
-        spotX + markR > hero.x &&
-        spotX - markR < hero.x + hero.w &&
-        spotY + markR > hero.y &&
-        spotY - markR < hero.y + hero.h;
-      if (light > 0.5 && touchesHero) {
+      const overlaps = (box: Box, x: number, y: number, r: number) =>
+        x + r > box.x && x - r < box.x + box.w && y + r > box.y && y - r < box.y + box.h;
+      if (light > 0.5 && glowTexts.some((t) => overlaps(t.box, spotX, spotY, markR))) {
         const last = glowMarks[glowMarks.length - 1];
         if (last && Math.hypot(spotX - last.x, spotY - last.y) < markR * 0.1) {
           last.t = time;
@@ -333,50 +419,56 @@ export default function BatSignalPage() {
       glowMarks = glowMarks.filter((m) => time - m.t < GLOW_HOLD_MS + GLOW_FADE_MS);
 
       // Glyphs x paint mask, added on top as light
-      const drawHeroGlow = () => {
-        if (glowMarks.length === 0) return;
+      const drawGlowText = (item: GlowText) => {
+        const { box } = item;
+        const marks = glowMarks.filter((m) => overlaps(box, m.x, m.y, m.r));
+        if (marks.length === 0) return;
+        const maskCtx = item.mask.getContext("2d");
+        const glowCtx = item.glow.getContext("2d");
+        if (!maskCtx || !glowCtx) return;
         // Grayscale mask, max-combined ("lighten" over opaque black) so overlapping marks
         // don't add up and each one fades on its own schedule
-        glowMaskCtx.setTransform(1, 0, 0, 1, 0, 0);
-        glowMaskCtx.globalCompositeOperation = "source-over";
-        glowMaskCtx.fillStyle = "#000";
-        glowMaskCtx.fillRect(0, 0, glowMask.width, glowMask.height);
-        glowMaskCtx.setTransform(
+        maskCtx.setTransform(1, 0, 0, 1, 0, 0);
+        maskCtx.globalCompositeOperation = "source-over";
+        maskCtx.fillStyle = "#000";
+        maskCtx.fillRect(0, 0, item.mask.width, item.mask.height);
+        maskCtx.setTransform(
           GLOW_MASK_SCALE,
           0,
           0,
           GLOW_MASK_SCALE,
-          -hero.x * GLOW_MASK_SCALE,
-          -hero.y * GLOW_MASK_SCALE,
+          -box.x * GLOW_MASK_SCALE,
+          -box.y * GLOW_MASK_SCALE,
         );
-        glowMaskCtx.globalCompositeOperation = "lighten";
-        for (const m of glowMarks) {
+        maskCtx.globalCompositeOperation = "lighten";
+        for (const m of marks) {
           const age = time - m.t;
           const level = age < GLOW_HOLD_MS ? 1 : 1 - smoothstep((age - GLOW_HOLD_MS) / GLOW_FADE_MS);
           const v = Math.round(255 * level);
-          const g = glowMaskCtx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
+          const g = maskCtx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
           g.addColorStop(0, `rgb(${v},${v},${v})`);
           g.addColorStop(0.55, `rgb(${v},${v},${v})`);
           g.addColorStop(1, "#000");
-          glowMaskCtx.fillStyle = g;
-          glowMaskCtx.fillRect(m.x - m.r, m.y - m.r, m.r * 2, m.r * 2);
+          maskCtx.fillStyle = g;
+          maskCtx.fillRect(m.x - m.r, m.y - m.r, m.r * 2, m.r * 2);
         }
 
-        heroGlowCtx.globalCompositeOperation = "source-over";
-        heroGlowCtx.drawImage(heroText, 0, 0);
-        heroGlowCtx.globalCompositeOperation = "multiply";
-        heroGlowCtx.drawImage(glowMask, 0, 0, heroGlow.width, heroGlow.height);
+        glowCtx.globalCompositeOperation = "source-over";
+        glowCtx.drawImage(item.glyphs, 0, 0);
+        glowCtx.globalCompositeOperation = "multiply";
+        glowCtx.drawImage(item.mask, 0, 0, item.glow.width, item.glow.height);
 
         ctx.globalCompositeOperation = "screen";
         ctx.globalAlpha = 1;
-        ctx.drawImage(heroGlow, hero.x, hero.y, hero.w, hero.h);
+        ctx.drawImage(item.glow, box.x, box.y, box.w, box.h);
         ctx.globalCompositeOperation = "source-over";
       };
+      const drawGlowTexts = () => glowTexts.forEach(drawGlowText);
 
       ctx.globalCompositeOperation = "source-over";
       ctx.drawImage(nightVideo, cover.x, cover.y, cover.w, cover.h);
       if (lensLight <= 0.001) {
-        drawHeroGlow();
+        drawGlowTexts();
         return;
       }
 
@@ -471,7 +563,7 @@ export default function BatSignalPage() {
       ctx.drawImage(spotCanvas, 0, 0, W, H);
 
       // Emissive, so it glows over the beam and the spot
-      drawHeroGlow();
+      drawGlowTexts();
 
       // 3. Hot lens
       ctx.globalCompositeOperation = "screen";
@@ -512,8 +604,108 @@ export default function BatSignalPage() {
     <div className="relative w-full h-screen bg-black overflow-hidden">
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full cursor-pointer"
+        className={`absolute inset-0 w-full h-full cursor-pointer transition-opacity duration-[1500ms] ease-out ${
+          sceneReady ? "opacity-100" : "opacity-0"
+        }`}
       />
+
+      {/* Keeps the nav legible over bright clouds */}
+      <div
+        className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-black/60 to-transparent transition-opacity delay-500 duration-1000 ${
+          sceneReady ? "opacity-100" : "opacity-0"
+        }`}
+      />
+
+      <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-6 py-6 sm:px-10 sm:py-8">
+        {/* Wrapper carries the glow: a mask would clip a filter on the masked element */}
+        <a
+          ref={logoRef}
+          href="#"
+          aria-label="Home"
+          tabIndex={logoFound ? 0 : -1}
+          className={`group block ${logoFound ? "animate-logo-reveal" : "pointer-events-none opacity-0"}`}
+        >
+          <span
+            className="block h-5 w-11 bg-slate-100/85 transition-colors group-hover:bg-white"
+            style={{
+              maskImage: batMask,
+              WebkitMaskImage: batMask,
+              maskSize: "contain",
+              WebkitMaskSize: "contain",
+              maskRepeat: "no-repeat",
+              WebkitMaskRepeat: "no-repeat",
+              maskPosition: "center",
+              WebkitMaskPosition: "center",
+            }}
+          />
+        </a>
+
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-10 md:flex">
+          {NAV_LINKS.map((label, i) => (
+            // Intro lives on a wrapper so its delay doesn't slow down the hover
+            <span
+              key={label}
+              className={`transition-all duration-700 ease-out ${
+                sceneReady ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
+              }`}
+              style={{ transitionDelay: `${800 + i * 90}ms` }}
+            >
+              <a
+                href={`#${label.toLowerCase()}`}
+                className="font-sans text-[11px] uppercase tracking-[0.32em] text-slate-300/70 transition-colors hover:text-white"
+              >
+                {label}
+              </a>
+            </span>
+          ))}
+        </nav>
+
+        <div
+          className={`transition-all delay-[1200ms] duration-700 ease-out ${
+            sceneReady ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
+          }`}
+        >
+          <button
+            type="button"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+            className="group relative -mr-2 h-10 w-10 cursor-pointer"
+          >
+            <span
+              className={`absolute left-2 right-2 h-px bg-slate-100/85 transition-all duration-300 group-hover:bg-white ${
+                menuOpen ? "top-1/2 rotate-45" : "top-[15px]"
+              }`}
+            />
+            <span
+              className={`absolute right-2 h-px bg-slate-100/85 transition-all duration-300 group-hover:bg-white ${
+                menuOpen ? "left-2 top-1/2 -rotate-45" : "left-4 top-[24px] group-hover:left-2"
+              }`}
+            />
+          </button>
+        </div>
+      </header>
+
+      {/* Fullscreen menu */}
+      <div
+        className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/75 backdrop-blur-md transition-opacity duration-500 ${
+          menuOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={() => setMenuOpen(false)}
+      >
+        {NAV_LINKS.map((label, i) => (
+          <a
+            key={label}
+            href={`#${label.toLowerCase()}`}
+            className={`font-heading text-4xl uppercase tracking-[0.18em] text-slate-200 transition-all duration-500 hover:text-white sm:text-6xl ${
+              menuOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+            }`}
+            style={{ transitionDelay: menuOpen ? `${150 + i * 70}ms` : "0ms" }}
+          >
+            {label}
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
