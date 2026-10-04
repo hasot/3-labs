@@ -64,12 +64,15 @@ const HERO_MAX_HEIGHT = 0.204; // cap on the letter height, of the viewport heig
 const HERO_CENTER_Y = 0.34; // of the viewport height
 const HERO_TRACKING = 0.12; // letter spacing, em
 const HERO_WEIGHT = 700;
-// Signature stacked in a column on the right
+const HERO_OPACITY = 0.7; // of the glow at full paint
+// Signature stacked in a column on the right, in Williwaw
 const SIDE_TEXT = "YUNKOV";
-const SIDE_SIZE = 0.05; // font size, of the viewport height
-const SIDE_MAX_SIZE = 0.07; // cap on the font size, of the viewport width (narrow screens)
+const SIDE_WEIGHT = 400;
+const SIDE_SIZE = 0.025; // font size, of the viewport height
+const SIDE_MAX_SIZE = 0.035; // cap on the font size, of the viewport width (narrow screens)
 const SIDE_LINE_HEIGHT = 1.25; // em
 const SIDE_CENTER_Y = 0.55; // of the viewport height
+const SIDE_OPACITY = 0.3;
 const GLOW_HALO_BLUR = 0.08; // of the font size
 const GLOW_HALO_STRENGTH = 0.6;
 const GLOW_REACH = 0.9; // painted radius, of the spot radius
@@ -91,6 +94,7 @@ type Glyph = { char: string; x: number; baseline: number };
 // One painted text, cropped to its box: prerendered glyphs, the beam's paint mask, their product
 type GlowText = {
   box: Box; // incl. halo padding, CSS px
+  opacity: number; // of the glow at full paint
   glyphs: HTMLCanvasElement;
   mask: HTMLCanvasElement;
   glow: HTMLCanvasElement;
@@ -133,25 +137,32 @@ export default function BatSignalPage() {
     let H = 0;
     let dpr = 1;
 
-    // next/font exposes the generated family name through a CSS variable
-    const heroFamily =
-      getComputedStyle(document.documentElement).getPropertyValue("--font-cinzel").trim() ||
-      "serif";
-    const createGlowText = (): GlowText => ({
+    // next/font exposes the generated family names through CSS variables
+    const rootStyle = getComputedStyle(document.documentElement);
+    const heroFamily = rootStyle.getPropertyValue("--font-cinzel").trim() || "serif";
+    const sideFamily = rootStyle.getPropertyValue("--font-williwaw").trim() || "serif";
+    const heroFont = (size: number) => `${HERO_WEIGHT} ${size}px ${heroFamily}`;
+    const sideFont = (size: number) => `${SIDE_WEIGHT} ${size}px ${sideFamily}`;
+    const createGlowText = (opacity = 1): GlowText => ({
       box: { x: 0, y: 0, w: 0, h: 0 },
+      opacity,
       glyphs: document.createElement("canvas"),
       mask: document.createElement("canvas"),
       glow: document.createElement("canvas"),
     });
-    const hero = createGlowText();
-    const side = createGlowText();
+    const hero = createGlowText(HERO_OPACITY);
+    const side = createGlowText(SIDE_OPACITY);
     const glowTexts = [hero, side];
     let glowMarks: GlowMark[] = [];
-    const font = (size: number) => `${HERO_WEIGHT} ${size}px ${heroFamily}`;
 
     // Prerenders white glyphs over a blurred halo, on black, so the paint mask can simply
     // be multiplied in. Drawn in device px: shadowBlur ignores transforms.
-    const prerender = (item: GlowText, glyphs: Glyph[], size: number) => {
+    const prerender = (
+      item: GlowText,
+      glyphs: Glyph[],
+      size: number,
+      font: (size: number) => string,
+    ) => {
       const { box } = item;
       item.glyphs.width = item.glow.width = Math.ceil(box.w * dpr);
       item.glyphs.height = item.glow.height = Math.ceil(box.h * dpr);
@@ -178,7 +189,7 @@ export default function BatSignalPage() {
     // Headline fitted to the sky, centered
     const layoutHero = () => {
       const chars = HERO_TEXT.split("");
-      ctx.font = font(100);
+      ctx.font = heroFont(100);
       const metrics = chars.map((c) => ctx.measureText(c));
       const word = ctx.measureText(HERO_TEXT);
       const tracking = 100 * HERO_TRACKING;
@@ -200,14 +211,14 @@ export default function BatSignalPage() {
         x += (metrics[i].width + tracking) * k;
         return g;
       });
-      prerender(hero, glyphs, size);
+      prerender(hero, glyphs, size, heroFont);
     };
 
     // Signature stacked letter by letter, aligned with the header's right edge
     const layoutSide = () => {
       const chars = SIDE_TEXT.split("");
       const size = Math.min(H * SIDE_SIZE, W * SIDE_MAX_SIZE);
-      ctx.font = font(size);
+      ctx.font = sideFont(size);
       const metrics = chars.map((c) => ctx.measureText(c));
       const ascent = ctx.measureText(SIDE_TEXT).actualBoundingBoxAscent;
       const lineHeight = size * SIDE_LINE_HEIGHT;
@@ -226,7 +237,7 @@ export default function BatSignalPage() {
         x: pad + (columnW - metrics[i].width) / 2,
         baseline: pad + ascent + lineHeight * i,
       }));
-      prerender(side, glyphs, size);
+      prerender(side, glyphs, size, sideFont);
     };
 
     let logoRect: DOMRect | null = null;
@@ -250,8 +261,7 @@ export default function BatSignalPage() {
     resize();
     let disposed = false;
     // Re-fit once the web font is in, the first layout may have used the fallback
-    document.fonts
-      .load(`${HERO_WEIGHT} 100px ${heroFamily}`)
+    Promise.all([document.fonts.load(heroFont(100)), document.fonts.load(sideFont(100))])
       .then(() => !disposed && resize())
       .catch(() => {});
 
@@ -459,8 +469,9 @@ export default function BatSignalPage() {
         glowCtx.drawImage(item.mask, 0, 0, item.glow.width, item.glow.height);
 
         ctx.globalCompositeOperation = "screen";
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = item.opacity;
         ctx.drawImage(item.glow, box.x, box.y, box.w, box.h);
+        ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = "source-over";
       };
       const drawGlowTexts = () => glowTexts.forEach(drawGlowText);
