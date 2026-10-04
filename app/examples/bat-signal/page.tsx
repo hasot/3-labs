@@ -53,7 +53,7 @@ export default function BatSignalPage() {
     };
 
     nightVideo.src = "/images/base.mp4";
-    lightVideo.src = "/images/light.mp4";
+    lightVideo.src = "/images/light-new.mp4";
 
     // Load bat logo
     const batLogo = new Image();
