@@ -21,6 +21,11 @@ const EXAMPLES = [
     title: "Bat Signal",
     description: "Interactive spotlight following mouse, realistic lighting with shadows.",
   },
+  {
+    slug: "mask-reveal",
+    title: "Mask Reveal",
+    description: "Sunny landing hero; the cursor tears a smoky trail to the night version.",
+  },
 ];
 
 export default function Home() {
