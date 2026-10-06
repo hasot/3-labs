@@ -29,7 +29,7 @@ const EXAMPLES = [
   {
     slug: "tiger",
     title: "Tiger",
-    description: "Mascot hero: a tiger cub turns its head after the cursor, frame by frame.",
+    description: "Mascot hero: a tiger cub turns its head to look at the cursor.",
   },
 ];
 
