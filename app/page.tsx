@@ -26,6 +26,11 @@ const EXAMPLES = [
     title: "Mask Reveal",
     description: "Sunny landing hero; the cursor tears a smoky trail to the night version.",
   },
+  {
+    slug: "tiger",
+    title: "Tiger",
+    description: "Mascot hero: a tiger cub turns its head after the cursor, frame by frame.",
+  },
 ];
 
 export default function Home() {
