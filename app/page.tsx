@@ -36,6 +36,11 @@ const EXAMPLES = [
     title: "Light Beam",
     description: "Personal landing: a thin warm beam follows the cursor and lights the portrait.",
   },
+  {
+    slug: "shave",
+    title: "Shave",
+    description: "The cursor is an electric razor: shave a friend's beard, the hair piles up below.",
+  },
 ];
 
 export default function Home() {
