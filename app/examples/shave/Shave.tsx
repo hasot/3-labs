@@ -39,6 +39,8 @@ const PILE_BIN = 6;
 const PILE_MAX = 0.12;
 // Near the controls the razor turns back into the normal cursor, CSS px around them
 const UI_ZONE = 56;
+// On touch screens the blade sits this far above the fingertip, so the finger never hides it, CSS px
+const TOUCH_LIFT = 72;
 // Cut hair bursts away from the face, then drifts down like petals:
 // weak gravity against air drag (terminal speed = GRAVITY / AIR_DRAG), px/s
 const BURST_SIDE = 320;
@@ -513,22 +515,36 @@ export function Shave() {
         last = null;
         return;
       }
+      const lift = e.pointerType === "touch" ? TOUCH_LIFT : 0;
       const events = e.getCoalescedEvents?.() ?? [];
       const points = events.length ? events : [e];
       for (const p of points) {
         const now = p.timeStamp;
+        const py = p.clientY - lift;
         if (last) {
           const dt = Math.max(1, now - last.t) / 1000;
           const vx = (p.clientX - last.x) / dt;
           const a = toBeard(last.x, last.y);
-          const b = toBeard(p.clientX, p.clientY);
+          const b = toBeard(p.clientX, py);
           cut(a.x, a.y, b.x, b.y, vx);
           tilt += (Math.max(-12, Math.min(12, vx * 0.012)) - tilt) * 0.2;
         }
-        last = { x: p.clientX, y: p.clientY, t: now };
+        last = { x: p.clientX, y: py, t: now };
       }
       razor.dataset.x = String(e.clientX);
-      razor.dataset.y = String(e.clientY);
+      razor.dataset.y = String(e.clientY - lift);
+    };
+
+    // A new touch starts a fresh stroke instead of cutting a line from where the last one ended
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch") last = null;
+      onMove(e);
+    };
+
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return;
+      last = null;
+      razor.style.opacity = "0";
     };
 
     const onLeave = () => {
@@ -802,7 +818,9 @@ export function Shave() {
       setReady(true);
       raf = requestAnimationFrame(loop);
       window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerdown", onMove);
+      window.addEventListener("pointerdown", onDown);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
       document.documentElement.addEventListener("pointerleave", onLeave);
       window.addEventListener("resize", resize);
     });
@@ -811,7 +829,9 @@ export function Shave() {
       disposed = true;
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerdown", onMove);
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
       document.documentElement.removeEventListener("pointerleave", onLeave);
       window.removeEventListener("resize", resize);
       void sound?.ctx.close();
