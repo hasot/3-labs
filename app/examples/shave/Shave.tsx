@@ -50,11 +50,24 @@ const AIR_GRIP = 1.6;
 // Gusty wind sweeping across the screen and each hair's own pendulum swing, px/s
 const WIND = 70;
 const SWAY = 85;
-// "Blow the hair away": how many of the fallen hairs take off (the rest just vanish)
-// and the gust speed range, px/s
-const MAX_BLOWN = 5000;
+// "Blow the hair away": gust speed range, px/s
 const GUST_MIN = 520;
 const GUST_MAX = 1100;
+// On the gust the hair first gathers into this word in the middle of the screen
+const WORD = "DROZD";
+const WORD_FONT = '900 {size}px "Arial Black", "Helvetica Neue", Arial, sans-serif';
+// Fewer hairs than this and the word gets topped up so it still reads
+const WORD_MIN_HAIRS = 1600;
+// Upper bound for the hairs in flight while the word forms
+const WORD_MAX_HAIRS = 6000;
+// Staggered take-off, flight, hold, then the wind tears it off letter by letter, ms
+const WORD_STAGGER = 350;
+const WORD_FORM = 1500;
+const WORD_HOLD = 1600;
+const WORD_TEAR = 700;
+// Spring that pulls a hair to its spot in the word
+const WORD_SPRING = 55;
+const WORD_DAMP = 11;
 // Center of the chin in the photo, image px; hair flies away from it
 const CHIN_X = 527;
 // Sound keeps going this long after the last cut, ms
@@ -80,6 +93,8 @@ type Hair = {
   vflip: number;
   // Target sideways speed while a gust carries it off screen, 0 when it just drifts
   gust: number;
+  // Spot in the word it flies to; from `at` it heads there, at `release` the gust takes it
+  target?: { x: number; y: number; at: number; release: number; gust: number };
 };
 
 type Landed = { x: number; fromBottom: number; rot: number; len: number; curl: number; color: string };
@@ -105,6 +120,49 @@ function valueNoise(x: number, y: number) {
   const c = hash2(ix, iy + 1);
   const d = hash2(ix + 1, iy + 1);
   return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+}
+
+// Spots spread evenly over the glyphs of the word, n of them, sorted left to right
+function wordTargets(n: number, vw: number, vh: number) {
+  const size = Math.min((vw * 0.84) / (WORD.length * 0.78), vh * 0.3);
+  const c = document.createElement("canvas");
+  c.width = Math.ceil(vw);
+  c.height = Math.ceil(vh);
+  const g = c.getContext("2d", { willReadFrequently: true })!;
+  g.font = WORD_FONT.replace("{size}", String(Math.round(size)));
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  // Below the face, over the light sweatshirt, where dark hair reads best
+  g.fillText(WORD, vw / 2, vh * 0.68);
+  const data = g.getImageData(0, 0, c.width, c.height).data;
+  const inside = (x: number, y: number) => {
+    const xi = Math.round(x);
+    const yi = Math.round(y);
+    return xi >= 0 && yi >= 0 && xi < c.width && yi < c.height && data[(yi * c.width + xi) * 4 + 3] > 128;
+  };
+
+  let area = 0;
+  for (let y = 0; y < c.height; y += 2) for (let x = 0; x < c.width; x += 2) if (inside(x, y)) area += 4;
+  if (!area) return [];
+  // Jittered grid, so the hairs fill the letters evenly instead of clumping
+  const step = Math.sqrt(area / n);
+  const pts: { x: number; y: number }[] = [];
+  for (let y = step / 2; y < c.height; y += step) {
+    for (let x = step / 2; x < c.width; x += step) {
+      const px = x + (Math.random() - 0.5) * step * 0.7;
+      const py = y + (Math.random() - 0.5) * step * 0.7;
+      if (inside(px, py)) pts.push({ x: px, y: py });
+    }
+  }
+  while (pts.length < n && pts.length) {
+    const p = pts[(Math.random() * pts.length) | 0];
+    pts.push({ x: p.x + (Math.random() - 0.5) * step, y: p.y + (Math.random() - 0.5) * step });
+  }
+  for (let i = pts.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [pts[i], pts[j]] = [pts[j], pts[i]];
+  }
+  return pts.slice(0, n).sort((a, b) => a.x - b.x);
 }
 
 function computeLayout(vw: number, vh: number): Layout {
@@ -478,33 +536,73 @@ export function Shave() {
     blowRef.current = () => {
       const dir = Math.random() < 0.5 ? -1 : 1;
       const gust = () => dir * (GUST_MIN + Math.random() * (GUST_MAX - GUST_MIN));
-      for (const h of falling) {
-        h.gust = gust();
-        h.vy = Math.min(h.vy, -120 - Math.random() * 260);
+      const hairFrom = (x: number, y: number, h: Pick<Hair, "rot" | "len" | "curl" | "color">): Hair => ({
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 160,
+        vy: -150 - Math.random() * 350,
+        rot: h.rot,
+        vr: (Math.random() - 0.5) * 6,
+        len: h.len,
+        curl: h.curl,
+        color: h.color,
+        phase: Math.random() * Math.PI * 2,
+        freq: 1.6 + Math.random() * 1.8,
+        flip: Math.random() * Math.PI,
+        vflip: (Math.random() - 0.5) * 14,
+        gust: 0,
+      });
+
+      // Everything on screen joins in: hairs still in the air and the heap below
+      let pool: Hair[] = falling.filter((h) => !h.gust);
+      const blownAway = falling.filter((h) => h.gust);
+      const room = Math.max(0, WORD_MAX_HAIRS - pool.length);
+      const lift = landed.length <= room ? landed : landed.filter(() => Math.random() < room / landed.length);
+      for (const l of lift) pool.push(hairFrom(l.x, layout.vh - l.fromBottom, l));
+      if (pool.length > WORD_MAX_HAIRS) pool = pool.filter(() => Math.random() < WORD_MAX_HAIRS / pool.length);
+      // Too few to read: top up with hairs blown in from below the screen
+      const sample = pool.length ? pool : null;
+      while (pool.length < WORD_MIN_HAIRS) {
+        const src = sample ? sample[(Math.random() * sample.length) | 0] : null;
+        pool.push(
+          hairFrom(Math.random() * layout.vw, layout.vh + 10 + Math.random() * 60, {
+            rot: Math.random() * Math.PI,
+            len: src?.len ?? 3 + Math.random() * 6,
+            curl: src?.curl ?? (Math.random() - 0.5) * 3,
+            color: src?.color ?? "rgb(28,23,21)",
+          }),
+        );
       }
-      // A random share of the heap lifts off, so a huge pile stays smooth to animate
-      const lift = landed.length <= MAX_BLOWN ? landed : landed.filter(() => Math.random() < MAX_BLOWN / landed.length);
-      for (const l of lift) {
-        falling.push({
-          x: l.x,
-          y: layout.vh - l.fromBottom,
-          vx: dir * Math.random() * 200,
-          vy: -250 - Math.random() * 480,
-          rot: l.rot,
-          vr: (Math.random() - 0.5) * 6,
-          len: l.len,
-          curl: l.curl,
-          color: l.color,
-          phase: Math.random() * Math.PI * 2,
-          freq: 1.6 + Math.random() * 1.8,
-          flip: Math.random() * Math.PI,
-          vflip: (Math.random() - 0.5) * 14,
+
+      const targets = wordTargets(pool.length, layout.vw, layout.vh);
+      const now = performance.now();
+      const left = targets.length ? targets[0].x : 0;
+      const span = targets.length ? Math.max(1, targets[targets.length - 1].x - left) : 1;
+      // Left hairs take the left letters, so the swarm flows instead of crossing over
+      pool.sort((a, b) => a.x - b.x);
+      pool.forEach((h, i) => {
+        const tg = targets[i];
+        if (!tg) {
+          h.gust = gust();
+          return;
+        }
+        const along = (tg.x - left) / span;
+        h.target = {
+          x: tg.x,
+          y: tg.y,
+          at: now + Math.random() * WORD_STAGGER,
+          // The wind tears the word off from the side it blows from
+          release: now + WORD_STAGGER + WORD_FORM + WORD_HOLD + (dir > 0 ? along : 1 - along) * WORD_TEAR,
           gust: gust(),
-        });
-      }
+        };
+      });
+
+      falling = [...blownAway, ...pool];
       landed = [];
       rebuildLanded();
       sound?.whoosh();
+      // Second gust when the word starts to come apart
+      window.setTimeout(() => sound?.whoosh(), WORD_STAGGER + WORD_FORM + WORD_HOLD);
       dirty = true;
     };
 
@@ -531,6 +629,31 @@ export function Shave() {
           const wind =
             WIND * (0.6 * Math.sin(t * 0.37 + h.y * 0.004) + 0.4 * Math.sin(t * 1.13 + h.x * 0.009 + 1.7));
           const swing = Math.sin(t * h.freq + h.phase);
+          const tg = h.target;
+          if (tg) {
+            if (now >= tg.release) {
+              h.target = undefined;
+              h.gust = tg.gust;
+              h.vy = -120 - Math.random() * 260;
+            } else if (now >= tg.at) {
+              // Spring to the spot, with a faint shimmer while the word holds
+              const tx = tg.x + Math.sin(t * 3 + h.phase) * 0.8;
+              const ty = tg.y + Math.cos(t * 2.6 + h.phase) * 0.8;
+              h.vx += (WORD_SPRING * (tx - h.x) - WORD_DAMP * h.vx) * dt;
+              h.vy += (WORD_SPRING * (ty - h.y) - WORD_DAMP * h.vy) * dt;
+              h.vflip *= 1 - Math.min(1, 3 * dt);
+              h.vr *= 1 - Math.min(1, 3 * dt);
+            } else {
+              h.vx *= 1 - Math.min(1, 2 * dt);
+              h.vy *= 1 - Math.min(1, 2 * dt);
+            }
+            h.x += h.vx * dt;
+            h.y += h.vy * dt;
+            h.rot += h.vr * dt;
+            h.flip += h.vflip * dt;
+            next.push(h);
+            continue;
+          }
           if (h.gust) {
             // Carried off: the gust lifts the hair and sweeps it out of the screen
             h.vx += (h.gust + swing * SWAY - h.vx) * Math.min(1, 2.2 * dt);
@@ -596,7 +719,9 @@ export function Shave() {
       ctx.lineWidth = 1.1;
       ctx.lineCap = "round";
       for (const hair of falling) {
-        const seen = 0.3 + 0.7 * Math.abs(Math.cos(hair.flip));
+        const facing = Math.abs(Math.cos(hair.flip));
+        // In the word every hair shows its length, so the letters read
+        const seen = hair.target ? 0.75 + 0.25 * facing : 0.3 + 0.7 * facing;
         drawHair(ctx, hair.x, hair.y, hair.rot, hair.len * seen, hair.curl * seen, hair.color);
       }
     };
