@@ -31,6 +31,11 @@ const EXAMPLES = [
     title: "Tiger",
     description: "Mascot hero: a tiger cub turns its head to look at the cursor.",
   },
+  {
+    slug: "light-beam",
+    title: "Light Beam",
+    description: "Personal landing: a thin warm beam follows the cursor and lights the portrait.",
+  },
 ];
 
 export default function Home() {
