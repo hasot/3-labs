@@ -53,11 +53,15 @@ const SWAY = 85;
 // "Blow the hair away": gust speed range, px/s
 const GUST_MIN = 520;
 const GUST_MAX = 1100;
-// On the gust the hair first gathers into this word in the middle of the screen
-const WORD = "DROZD";
+// On the gust the hair first gathers into this phrase in the middle of the screen
+// Lines of the phrase and their size relative to the first one
+const WORD_LINES = [
+  { text: "I'm DEN", scale: 1 },
+  { text: "English teacher", scale: 0.5 },
+];
 const WORD_FONT = '900 {size}px "Arial Black", "Helvetica Neue", Arial, sans-serif';
 // Fewer hairs than this and the word gets topped up so it still reads
-const WORD_MIN_HAIRS = 1600;
+const WORD_MIN_HAIRS = 2600;
 // Upper bound for the hairs in flight while the word forms
 const WORD_MAX_HAIRS = 6000;
 // Staggered take-off, flight, hold, then the wind tears it off letter by letter, ms
@@ -94,7 +98,7 @@ type Hair = {
   // Target sideways speed while a gust carries it off screen, 0 when it just drifts
   gust: number;
   // Spot in the word it flies to; from `at` it heads there, at `release` the gust takes it
-  target?: { x: number; y: number; at: number; release: number; gust: number };
+  target?: { x: number; y: number; k: number; at: number; release: number; gust: number };
 };
 
 type Landed = { x: number; fromBottom: number; rot: number; len: number; curl: number; color: string };
@@ -124,16 +128,36 @@ function valueNoise(x: number, y: number) {
 
 // Spots spread evenly over the glyphs of the word, n of them, sorted left to right
 function wordTargets(n: number, vw: number, vh: number) {
-  const size = Math.min((vw * 0.84) / (WORD.length * 0.78), vh * 0.3);
   const c = document.createElement("canvas");
   c.width = Math.ceil(vw);
   c.height = Math.ceil(vh);
   const g = c.getContext("2d", { willReadFrequently: true })!;
-  g.font = WORD_FONT.replace("{size}", String(Math.round(size)));
+  // Every line fits into 84% of the width; the first one is never taller than 22% of the screen
+  g.font = WORD_FONT.replace("{size}", "100");
+  let size = vh * 0.22;
+  for (const line of WORD_LINES) {
+    size = Math.min(size, (vw * 0.84 * 100) / (g.measureText(line.text).width * line.scale));
+  }
+  const gap = size * 0.12;
+  const height = WORD_LINES.reduce((sum, line) => sum + line.scale * size, 0) + gap * (WORD_LINES.length - 1);
   g.textAlign = "center";
   g.textBaseline = "middle";
   // Below the face, over the light sweatshirt, where dark hair reads best
-  g.fillText(WORD, vw / 2, vh * 0.68);
+  let y = vh * 0.7 - height / 2;
+  // Bottom edge of each line, to tell which line a spot belongs to
+  const bands: { bottom: number; scale: number }[] = [];
+  for (const line of WORD_LINES) {
+    const h = line.scale * size;
+    g.font = WORD_FONT.replace("{size}", String(Math.round(h)));
+    g.fillText(line.text, vw / 2, y + h / 2);
+    y += h + gap;
+    bands.push({ bottom: y - gap / 2, scale: line.scale });
+  }
+  // Smaller letters get shorter hairs, or thin strokes turn into a scribble
+  const hairScale = (py: number) => {
+    const band = bands.find((b) => py < b.bottom) ?? bands[bands.length - 1];
+    return Math.min(1, Math.max(0.45, band.scale * 1.05));
+  };
   const data = g.getImageData(0, 0, c.width, c.height).data;
   const inside = (x: number, y: number) => {
     const xi = Math.round(x);
@@ -162,7 +186,10 @@ function wordTargets(n: number, vw: number, vh: number) {
     const j = (Math.random() * (i + 1)) | 0;
     [pts[i], pts[j]] = [pts[j], pts[i]];
   }
-  return pts.slice(0, n).sort((a, b) => a.x - b.x);
+  return pts
+    .slice(0, n)
+    .map((p) => ({ ...p, k: hairScale(p.y) }))
+    .sort((a, b) => a.x - b.x);
 }
 
 function computeLayout(vw: number, vh: number): Layout {
@@ -590,6 +617,7 @@ export function Shave() {
         h.target = {
           x: tg.x,
           y: tg.y,
+          k: tg.k,
           at: now + Math.random() * WORD_STAGGER,
           // The wind tears the word off from the side it blows from
           release: now + WORD_STAGGER + WORD_FORM + WORD_HOLD + (dir > 0 ? along : 1 - along) * WORD_TEAR,
@@ -721,7 +749,7 @@ export function Shave() {
       for (const hair of falling) {
         const facing = Math.abs(Math.cos(hair.flip));
         // In the word every hair shows its length, so the letters read
-        const seen = hair.target ? 0.75 + 0.25 * facing : 0.3 + 0.7 * facing;
+        const seen = hair.target ? (0.75 + 0.25 * facing) * hair.target.k : 0.3 + 0.7 * facing;
         drawHair(ctx, hair.x, hair.y, hair.rot, hair.len * seen, hair.curl * seen, hair.color);
       }
     };
