@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { DISPLAY_LIB, MAX_STEPS, createFluid, hexToLinear } from "./fluid";
+import { createSmokeSound } from "./smokeSound";
 
 // SmokeFill smoke (shaders.com, MIT) poured by the cursor, over a giant word. Two
 // walled fluids from ./fluid.ts: one fills the screen around the letters, the
@@ -18,7 +19,7 @@ const MAX_DT = 0.033;
 const TELEPORT = 0.25;
 const MIN_DRAG = 6e-4;
 
-const WORD = "NOBODY";
+const WORD = "NOTHING";
 // The word fills this share of the screen width, its capitals at most this share
 // of the height
 const WORD_WIDTH = 0.92;
@@ -38,7 +39,7 @@ const FRESH = "#8cf3ff";
 const AGED = "#04a0d6";
 // The cursor pours: how wide, the cone it spreads into, and how much of its own
 // speed the smoke takes along, up to the SmokeFill source's speed
-const EMIT_RADIUS = 0.06;
+const EMIT_RADIUS = 0.05;
 const SPREAD = 60;
 const JET = 0.8;
 const MAX_JET = 1.5;
@@ -46,8 +47,8 @@ const MAX_JET = 1.5;
 // heights per second at the rim
 const SPIN = 1.2;
 // Power: smoke poured per (word heights per second) of cursor speed, capped
-const POWER = 3;
-const MAX_POWER = 10;
+const POWER = 2.1;
+const MAX_POWER = 7;
 // Fade per second: a thin wisp is gone in about five seconds (e^-0.6·5 ≈ 1/20),
 // thick smoke takes longer
 const DISSIPATION = 0.6;
@@ -60,6 +61,9 @@ const COLOR_DECAY = 0.4;
 // its density let in per second, and how far past the edge it is felt (word heights)
 const SEEP = 0.8;
 const SEEP_REACH = 0.03;
+// Sound: how much "smoke in the air" a unit of pouring power adds per second; it
+// fades at DISSIPATION, like the smoke itself
+const SOUND_SMOKE = 0.06;
 // The cursor also pushes the smoke already there
 const MOUSE_INFLUENCE = 0.6;
 const MOUSE_RADIUS = 0.1;
@@ -209,6 +213,8 @@ export function InkFlow() {
   const wordRef = useRef<HTMLHeadingElement>(null);
   const [painted, setPainted] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [sound] = useState(createSmokeSound);
+  const [soundOn, setSoundOn] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -342,10 +348,17 @@ export function InkFlow() {
       const r = canvas.getBoundingClientRect();
       pointer = { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height };
     };
-    // A finger lifted and put down elsewhere is a jump, not a stroke
+    // A finger lifted and put down elsewhere is a jump, not a stroke. The first
+    // press anywhere also lets the sound in (browsers want a gesture for audio)
+    let soundAsked = false;
     const onDown = (e: PointerEvent) => {
       onMove(e);
       prev = pointer;
+      if (!soundAsked && !(e.target as Element).closest("[data-sound]")) {
+        soundAsked = true;
+        sound.enable();
+        setSoundOn(true);
+      }
     };
 
     // This frame's cursor move in screen uv, or null when it did not move
@@ -451,23 +464,38 @@ export function InkFlow() {
 
     let raf = 0;
     let last = performance.now();
+    let airborne = 0;
+    let soundX = 0.5;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min((now - last) / 1000, MAX_DT);
       last = now;
       if (dt < 0.001 || !inside) return;
       track();
+      // Sound follows the cursor's speed and the smoke it leaves in the air
+      const speed = move ? Math.hypot(move.dx * canvas.width, move.dy * canvas.height) / unit / dt : 0;
+      airborne = Math.min(airborne * Math.exp(-DISSIPATION * dt) + Math.min(speed * POWER, MAX_POWER) * SOUND_SMOKE * dt, 1.5);
+      if (move) soundX = move.x;
+      sound.update(speed, soundX, airborne);
       pour(around, dt);
       pour(inside, dt, around);
       draw();
     };
 
     resize();
-    // Web fonts may land after the first paint; redraw the masks with the real ones
-    document.fonts.ready.then(() => {
+    // The web font lands after the first layout and is wider than the fallback:
+    // ask for the exact face the word uses, and refit whenever a font arrives
+    const refit = () => {
       fitWord();
       paintText();
-    });
+    };
+    const word = wordRef.current;
+    if (word) {
+      const cs = getComputedStyle(word);
+      document.fonts.load(`${cs.fontWeight} 100px ${cs.fontFamily}`, WORD).then(refit, () => {});
+    }
+    document.fonts.ready.then(refit);
+    document.fonts.addEventListener("loadingdone", refit);
     window.addEventListener("resize", resize);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerdown", onDown);
@@ -478,8 +506,10 @@ export function InkFlow() {
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", onDown);
+      document.fonts.removeEventListener("loadingdone", refit);
+      sound.dispose();
     };
-  }, []);
+  }, [sound]);
 
   return (
     <main className="relative h-dvh w-full touch-none overflow-hidden bg-[#0F0F10] text-white select-none">
@@ -487,9 +517,23 @@ export function InkFlow() {
 
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-6 py-5 font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.3em] text-white/50 md:px-12 md:py-8">
         <span>Ink Flow</span>
-        <Link href="/" className="pointer-events-auto transition-colors hover:text-white">
-          Labs
-        </Link>
+        <nav className="pointer-events-auto flex gap-6 md:gap-10">
+          <button
+            type="button"
+            data-sound
+            onClick={() => {
+              if (sound.on) sound.disable();
+              else sound.enable();
+              setSoundOn(sound.on);
+            }}
+            className="uppercase tracking-[0.3em] transition-colors hover:text-white"
+          >
+            {soundOn ? "Sound on" : "Sound off"}
+          </button>
+          <Link href="/" className="transition-colors hover:text-white">
+            Labs
+          </Link>
+        </nav>
       </header>
 
       <div
@@ -511,8 +555,8 @@ export function InkFlow() {
         }`}
       >
         <span className="h-px w-8 bg-[#8cf3ff]/70" />
-        <span className="pointer-coarse:hidden">Swipe across the letters</span>
-        <span className="hidden pointer-coarse:inline">Swipe across the letters</span>
+        <span className="pointer-coarse:hidden">Click for sound, swipe across the letters</span>
+        <span className="hidden pointer-coarse:inline">Tap for sound, swipe across the letters</span>
         <span className="h-px w-8 bg-[#8cf3ff]/70" />
       </div>
 

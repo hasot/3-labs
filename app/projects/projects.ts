@@ -25,6 +25,48 @@ export type Project = {
 // Gallery order
 export const PROJECTS: Project[] = [
   {
+    slug: "ink-flow",
+    title: "Nothing",
+    category: "Hero",
+    status: "New",
+    likes: 41,
+    summary:
+      "A giant NOTHING on a black screen, made of empty glass vessels. Sweep the cursor and it pours smoke: the faster you go, the more. Smoke that lands in a letter swirls in rings inside its walls; the rest curls around the word and seeps in where it presses on it. A wisp is gone in five seconds, and every stroke breathes out with a slow, calm exhale.",
+    stack: ["Next.js 16", "WebGL2 fluid sim", "Web Audio"],
+    files: [
+      "app/examples/ink-flow/page.tsx",
+      "app/examples/ink-flow/InkFlow.tsx",
+      "app/examples/ink-flow/fluid.ts",
+      "app/examples/ink-flow/smokeSound.ts",
+    ],
+    prompt: [
+      {
+        title: "Stable fluids in WebGL2",
+        body: "Port the stable-fluids solver of the shaders.com components (MIT) to WebGL2 fragment passes on half-float textures: curl, vorticity confinement, divergence, 10 Jacobi iterations, gradient subtraction, semi-Lagrangian advection. Grids of any shape with square cells, solid walls from a mask, dye stored as density and age.",
+      },
+      {
+        title: "The word as a mask",
+        body: "Fit one heavy word to 92% of the screen width and draw the real DOM text into a canvas at the spot the browser laid it out, white on opaque black. One copy at screen resolution for crisp edges, one on each simulation grid for the walls.",
+      },
+      {
+        title: "Two vessels",
+        body: "One fluid fills the screen with the letters as solid walls, a second lives inside the word's box with the letters as the only open space. Smoke pressing on a letter from outside seeps in at a small rate.",
+      },
+      {
+        title: "The cursor pours SmokeFill",
+        body: "Along the cursor's path, blend the velocity toward a cone of jets in the direction of motion, capped at the SmokeFill source speed, and spin every puff around its centre so the smoke curls into rings. Pour density by speed; fresh smoke resets its age; it fades in about five seconds.",
+      },
+      {
+        title: "Shading",
+        body: "Colour the smoke from fresh cyan to aged blue by its age, opacity from its density, with the frozen grain and pixel jitter of the shaders.com Stone filter. Inside a letter only its own smoke shows, so an empty letter is a dark silhouette in the swirl.",
+      },
+      {
+        title: "A breathing sound",
+        body: "Synthesise slow breathing with Web Audio: noise shaped by the formants of an open vowel. The first stroke breathes out for ~4 s with a long exponential fade; while strokes go on, a soft inhale and another exhale. Add a quiet hum while smoke hangs in the air and a soft room reverb. Sound starts on the first click.",
+      },
+    ],
+  },
+  {
     slug: "bat-signal",
     title: "Bat-Signal",
     category: "Hero",

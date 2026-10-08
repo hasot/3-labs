@@ -282,6 +282,19 @@ async def mask_reveal(v, mirror=False):
     await v.drift(3.0)  # the night closes back up
 
 
+async def ink_flow(v):
+    # Pour smoke into the letters with quick sweeps, stir the smoke around the
+    # word, then step aside and let it all swirl and fade back to the empty word
+    await v.stroke([(0.12, 0.44), (0.32, 0.56), (0.52, 0.44), (0.72, 0.56), (0.90, 0.47)], 2.2)
+    await v.drift(0.8)
+    await v.stroke([(0.74, 0.42), (0.48, 0.58), (0.20, 0.48)], 1.5)
+    await v.drift(0.6)
+    await v.move((0.30, 0.22), 0.9)
+    await v.stroke([(0.50, 0.18), (0.72, 0.24)], 1.4)
+    await v.move((0.86, 0.82), 0.6)
+    await v.drift(6.5)  # the wisps curl and fade, the word goes dark again
+
+
 SCENARIOS = {
     # slug: (cursor, start point, seconds to let the page settle, scenario)
     "bat-signal": ("arrow", (0.55, 0.42), 6.0, bat_signal),
@@ -290,6 +303,7 @@ SCENARIOS = {
     "tiger-walk": ("arrow", (0.995, 0.86), 4.0, tiger_walk),
     "tiger": (None, (0.50, 0.15), 3.0, tiger),
     "mask-reveal-hand": ("hand", (0.20, 0.20), 3.0, lambda v: mask_reveal(v, mirror=True)),
+    "ink-flow": ("arrow", (0.86, 0.82), 7.0, ink_flow),
 }
 
 
