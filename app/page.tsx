@@ -66,6 +66,11 @@ const EXAMPLES = [
     title: "Head Smoke",
     description: "The back of the head comes apart into endless curling smoke; the cursor stirs it.",
   },
+  {
+    slug: "glasses-drop",
+    title: "Glasses Drop",
+    description: "Pull the 3D sunglasses off onto hard, jelly and water letters. Not back on the nose in 10 s? The sun burns the screen white.",
+  },
 ];
 
 export default function Home() {
