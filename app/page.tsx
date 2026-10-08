@@ -41,6 +41,11 @@ const EXAMPLES = [
     title: "Shave",
     description: "The cursor is an electric razor: shave a friend's beard, the hair piles up below.",
   },
+  {
+    slug: "tiger-walk",
+    title: "Tiger Walk",
+    description: "A dark tiger walks toward you from the bottom of a black screen.",
+  },
 ];
 
 export default function Home() {
