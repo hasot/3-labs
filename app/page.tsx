@@ -56,6 +56,16 @@ const EXAMPLES = [
     title: "Tiger Walk",
     description: "A dark tiger walks toward you from the bottom of a black screen.",
   },
+  {
+    slug: "ink-flow",
+    title: "Ink Flow",
+    description: "The shaders.com hero: a fluid field under the cursor smears grainy blue-violet ink.",
+  },
+  {
+    slug: "head-smoke",
+    title: "Head Smoke",
+    description: "The back of the head comes apart into endless curling smoke; the cursor stirs it.",
+  },
 ];
 
 export default function Home() {
