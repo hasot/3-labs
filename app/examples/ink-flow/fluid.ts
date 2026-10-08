@@ -78,6 +78,12 @@ const ivec2 SIZE = ivec2(${w}, ${h});
 ivec2 cell() { return ivec2(gl_FragCoord.xy); }
 // Clamped neighbour, so the walls mirror the edge cell
 vec4 at(sampler2D t, ivec2 c) { return texelFetch(t, clamp(c, ivec2(0), SIZE - 1), 0); }
+// Solid mask over the grid: 1 where the fluid may go, 0 inside walls
+uniform sampler2D uSolid;
+float open(ivec2 c) {
+  if (c.x < 0 || c.y < 0 || c.x >= SIZE.x || c.y >= SIZE.y) return 0.0;
+  return step(0.5, texture(uSolid, (vec2(c) + 0.5) / vec2(SIZE)).r);
+}
 `;
 
 // One frame of brush strokes: every splat along the path, in order. Each one only
@@ -169,17 +175,18 @@ void main() {
 }
 `;
 
-// At the walls the outside cell mirrors the normal velocity, so nothing leaks out
+// At a wall (the screen edge or a solid cell) the cell beyond mirrors the normal
+// velocity, so nothing leaks out
 const DIVERGENCE_FS = (H: string) => `${H}
 uniform sampler2D uVel;
 void main() {
   ivec2 c = cell();
   vec2 v = texelFetch(uVel, c, 0).xy;
-  float L = c.x == 0 ? -v.x : at(uVel, c + ivec2(-1, 0)).x;
-  float R = c.x == SIZE.x - 1 ? -v.x : at(uVel, c + ivec2(1, 0)).x;
-  float D = c.y == 0 ? -v.y : at(uVel, c + ivec2(0, -1)).y;
-  float U = c.y == SIZE.y - 1 ? -v.y : at(uVel, c + ivec2(0, 1)).y;
-  outColor = vec4((R - L + U - D) * 0.5, 0.0, 0.0, 0.0);
+  float L = open(c + ivec2(-1, 0)) < 0.5 ? -v.x : at(uVel, c + ivec2(-1, 0)).x;
+  float R = open(c + ivec2(1, 0)) < 0.5 ? -v.x : at(uVel, c + ivec2(1, 0)).x;
+  float D = open(c + ivec2(0, -1)) < 0.5 ? -v.y : at(uVel, c + ivec2(0, -1)).y;
+  float U = open(c + ivec2(0, 1)) < 0.5 ? -v.y : at(uVel, c + ivec2(0, 1)).y;
+  outColor = vec4((R - L + U - D) * 0.5 * open(c), 0.0, 0.0, 0.0);
 }
 `;
 
@@ -191,7 +198,7 @@ void main() {
   ivec2 c = cell();
   float p = at(uPressure, c + ivec2(-1, 0)).x + at(uPressure, c + ivec2(1, 0)).x
           + at(uPressure, c + ivec2(0, -1)).x + at(uPressure, c + ivec2(0, 1)).x;
-  outColor = vec4((p * uScale - texelFetch(uDiv, c, 0).x) * 0.25, 0.0, 0.0, 0.0);
+  outColor = vec4((p * uScale - texelFetch(uDiv, c, 0).x) * 0.25 * open(c), 0.0, 0.0, 0.0);
 }
 `;
 
@@ -210,17 +217,21 @@ void main() {
 `;
 
 // Semi-Lagrangian step back along the velocity, then a fade. Velocities are in
-// cells per second, so the back-traced point is in cells too
+// cells per second, so the back-traced point is in cells too. With uAgeRate set the
+// dye is density (r) and age (g): only the density fades, the age counts up
 const ADVECT_FS = (H: string) => `${H}
 uniform sampler2D uVel;
 uniform sampler2D uSrc;
 uniform float uDt;
 uniform float uFade;
+uniform float uAgeRate;
 void main() {
   ivec2 c = cell();
   vec2 back = clamp(vec2(c) - texelFetch(uVel, c, 0).xy * uDt, vec2(0.0), vec2(SIZE - 1));
   vec4 s = texture(uSrc, (back + 0.5) / vec2(SIZE));
-  outColor = vec4(max(s.rgb / (1.0 + uFade * uDt), 0.0), 0.0);
+  vec3 v = max(s.rgb / (1.0 + uFade * uDt), 0.0);
+  if (uAgeRate > 0.0) v.g = min(s.g + uAgeRate * uDt, 1.0);
+  outColor = vec4(v * open(c), 0.0);
 }
 `;
 
@@ -246,7 +257,7 @@ void main() {
   vec3 hi = max(max(s00, s10), max(s01, s11));
   vec3 hat = texelFetch(uHat, c, 0).rgb;
   vec3 v = hat + 0.5 * (texelFetch(uSrc, c, 0).rgb - texelFetch(uBack, c, 0).rgb);
-  outColor = vec4(max(clamp(v, lo, hi) / (1.0 + uFade * uDt), 0.0), 0.0);
+  outColor = vec4(max(clamp(v, lo, hi) / (1.0 + uFade * uDt), 0.0) * open(c), 0.0);
 }
 `;
 
@@ -307,6 +318,9 @@ export type StepParams = {
   buoyancy?: [number, number];
   // MacCormack dye advection: keeps fine threads sharp, costs two more passes
   sharp?: boolean;
+  // Dye as density (r) and age (g): the age climbs this much per second instead of
+  // fading. Not combined with sharp
+  ageRate?: number;
   // Velocity and dye damping per second
   velFade: number;
   dyeFade: number;
@@ -381,6 +395,11 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
   const dye = pair();
   const pressure = pair();
   const div = target();
+  // Walls: a single white texel (no walls) until setSolid gives a mask
+  const noWalls = gl.createTexture()!;
+  gl.bindTexture(gl.TEXTURE_2D, noWalls);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
+  let solid = noWalls;
   // Scratch for the MacCormack round trip, made on first use
   let hat: Target | null = null;
   let roundTrip: Target | null = null;
@@ -389,6 +408,11 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
     gl.activeTexture(gl.TEXTURE0 + unit);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.uniform1i(loc, unit);
+  };
+  // Every sim pass sees the walls on texture unit 7
+  const begin = (prog: Program) => {
+    gl.useProgram(prog.p);
+    bindTex(7, prog.u("uSolid"), solid);
   };
   const run = (out: Target) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, out.fbo);
@@ -400,11 +424,31 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
   return {
     width: w,
     height: h,
+    // Shader prelude of this grid (cell(), at(), open(), SIZE) for custom passes
+    header: H,
     program,
     bindTex,
     dye: () => dye.read.tex,
     // Velocity in cells per second in xy
     velocity: () => vel.read.tex,
+    // Walls: a mask over the grid (r: 1 open, 0 solid); null removes them
+    setSolid(mask: WebGLTexture | null) {
+      solid = mask ?? noWalls;
+    },
+
+    // A custom pass over the grid that rewrites the velocity or the dye. It sees the
+    // current velocity as uVel (unit 0), the dye as uDye (unit 1) and the walls;
+    // setup binds the rest
+    pass(prog: Program, into: "velocity" | "dye", setup?: () => void) {
+      gl.viewport(0, 0, w, h);
+      begin(prog);
+      bindTex(0, prog.u("uVel"), vel.read.tex);
+      bindTex(1, prog.u("uDye"), dye.read.tex);
+      setup?.();
+      const pr = into === "velocity" ? vel : dye;
+      run(pr.write);
+      pr.swap();
+    },
 
     // Gaussian splats at grid positions (cells), each pushing the fluid by its
     // impulse (cells per second): one [x, y] for all of them, or a pair per splat.
@@ -419,7 +463,7 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
       if (impulse instanceof Float32Array) impulses.set(impulse.subarray(0, count * 2));
       else for (let i = 0; i < count; i++) impulses.set(impulse, i * 2);
       gl.viewport(0, 0, w, h);
-      gl.useProgram(splatVel.p);
+      begin(splatVel);
       bindTex(0, splatVel.u("uVel"), vel.read.tex);
       gl.uniform2fv(splatVel.u("uPos"), pos);
       gl.uniform1i(splatVel.u("uCount"), count);
@@ -429,7 +473,7 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
       vel.swap();
       if (!colors) return;
 
-      gl.useProgram(splatDye.p);
+      begin(splatDye);
       bindTex(0, splatDye.u("uDye"), dye.read.tex);
       gl.uniform2fv(splatDye.u("uPos"), pos);
       gl.uniform3fv(splatDye.u("uCol"), colors);
@@ -439,16 +483,16 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
       dye.swap();
     },
 
-    step(dt: number, { curl: curlStrength, buoyancy: force, sharp, velFade, dyeFade }: StepParams) {
+    step(dt: number, { curl: curlStrength, buoyancy: force, sharp, ageRate = 0, velFade, dyeFade }: StepParams) {
       gl.viewport(0, 0, w, h);
 
-      gl.useProgram(curl.p);
+      begin(curl);
       bindTex(0, curl.u("uVel"), vel.read.tex);
       run(vel.write);
       vel.swap();
 
       if (curlStrength > 0) {
-        gl.useProgram(vorticity.p);
+        begin(vorticity);
         bindTex(0, vorticity.u("uVel"), vel.read.tex);
         gl.uniform1f(vorticity.u("uCurl"), curlStrength);
         gl.uniform1f(vorticity.u("uDt"), dt);
@@ -457,7 +501,7 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
       }
 
       if (force) {
-        gl.useProgram(buoyancy.p);
+        begin(buoyancy);
         bindTex(0, buoyancy.u("uVel"), vel.read.tex);
         bindTex(1, buoyancy.u("uDye"), dye.read.tex);
         gl.uniform2f(buoyancy.u("uForce"), force[0], force[1]);
@@ -466,11 +510,11 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
         vel.swap();
       }
 
-      gl.useProgram(divergence.p);
+      begin(divergence);
       bindTex(0, divergence.u("uVel"), vel.read.tex);
       run(div);
 
-      gl.useProgram(jacobi.p);
+      begin(jacobi);
       bindTex(1, jacobi.u("uDiv"), div.tex);
       for (let i = 0; i < JACOBI_ITERS; i++) {
         bindTex(0, jacobi.u("uPressure"), pressure.read.tex);
@@ -479,17 +523,18 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
         pressure.swap();
       }
 
-      gl.useProgram(gradient.p);
+      begin(gradient);
       bindTex(0, gradient.u("uPressure"), pressure.read.tex);
       bindTex(1, gradient.u("uVel"), vel.read.tex);
       run(vel.write);
       vel.swap();
 
-      gl.useProgram(advect.p);
+      begin(advect);
       gl.uniform1f(advect.u("uDt"), dt);
       bindTex(0, advect.u("uVel"), vel.read.tex);
       bindTex(1, advect.u("uSrc"), vel.read.tex);
       gl.uniform1f(advect.u("uFade"), velFade);
+      gl.uniform1f(advect.u("uAgeRate"), 0);
       run(vel.write);
       vel.swap();
 
@@ -498,6 +543,7 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
       if (!sharp) {
         bindTex(1, advect.u("uSrc"), dye.read.tex);
         gl.uniform1f(advect.u("uFade"), dyeFade);
+        gl.uniform1f(advect.u("uAgeRate"), ageRate);
         run(dye.write);
         dye.swap();
         return;
@@ -512,7 +558,7 @@ export function createFluid(gl: WebGL2RenderingContext, w = N, h = N) {
       bindTex(1, advect.u("uSrc"), hat.tex);
       run(roundTrip);
 
-      gl.useProgram(maccormack.p);
+      begin(maccormack);
       bindTex(0, maccormack.u("uVel"), vel.read.tex);
       bindTex(1, maccormack.u("uSrc"), dye.read.tex);
       bindTex(2, maccormack.u("uHat"), hat.tex);
