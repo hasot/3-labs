@@ -71,6 +71,11 @@ const EXAMPLES = [
     title: "Glasses Drop",
     description: "Pull the 3D sunglasses off onto hard, jelly and water letters. Not back on the nose in 10 s? The sun burns the screen white.",
   },
+  {
+    slug: "blade-rave",
+    title: "Blood Rave",
+    description: "Blade in the club: a strobe fires on every kick of the Vampire Dance Club theme. Hold the mouse and the sprinklers rain blood.",
+  },
 ];
 
 export default function Home() {
