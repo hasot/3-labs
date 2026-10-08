@@ -253,16 +253,24 @@ async def tiger(v):
 
 
 async def tiger_walk(v):
-    await v.drift(1.4)  # the tiger walks out of the dark
-    await v.move((0.52, 0.56), 0.8)
-    await v.drift(0.5, 0.005)
+    # Film the walk from its first frame: the tiger comes out of the dark almost all
+    # the way (its idle loop is 8 s) before the visitor clicks
+    await v.page.evaluate("""() => {
+      const walk = document.querySelector('video[src*="tiger-walk"]');
+      if (walk) walk.currentTime = 0;
+    }""")
+    await v.drift(1.0, 0.004)
+    await v.move((0.70, 0.66), 0.5)  # the hand comes in from the edge
+    await v.drift(2.0)
+    await v.move((0.54, 0.58), 0.6)
+    await v.drift(2.6, 0.006)
     await v.click()  # it leaps at the lens, the claws tear the screen onto the jungle
-    await v.drift(3.6, 0.008)
+    await v.drift(3.4, 0.008)
     await v.move((0.66, 0.42), 0.6)
-    await v.drift(2.6)  # the title spread fades in item by item
+    await v.drift(2.8)  # the title spread fades in item by item
     await v.click()  # back into the dark
-    await v.move((0.72, 0.72), 0.7)
-    await v.drift(2.4)
+    await v.move((0.92, 0.80), 0.7)
+    await v.drift(1.0)
 
 
 async def mask_reveal(v, mirror=False):
@@ -279,7 +287,7 @@ SCENARIOS = {
     "bat-signal": ("arrow", (0.55, 0.42), 6.0, bat_signal),
     "light-beam": ("arrow", (0.62, 0.42), 3.0, light_beam),
     "shave": (None, (0.62, 0.74), 3.0, shave),
-    "tiger-walk": ("arrow", (0.72, 0.72), 5.0, tiger_walk),
+    "tiger-walk": ("arrow", (0.995, 0.86), 4.0, tiger_walk),
     "tiger": (None, (0.50, 0.15), 3.0, tiger),
     "mask-reveal-hand": ("hand", (0.20, 0.20), 3.0, lambda v: mask_reveal(v, mirror=True)),
 }
