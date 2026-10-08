@@ -1,6 +1,7 @@
 // Webcam hand tracking with MediaPipe Hand Landmarker. Reports the middle of the
 // palm as a point in 0..1 screen space (mirrored, like looking in a mirror), or
-// null while no hand is in view.
+// null while no hand is in view. Also reports the pinch: the point between the
+// thumb and index fingertips and how far apart they are.
 
 // Keep in sync with the installed @mediapipe/tasks-vision version
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
@@ -14,7 +15,15 @@ const REACH = 0.12;
 // Landmarks around the palm: wrist and the base of each finger
 const PALM = [0, 5, 9, 13, 17];
 
-export type HandPoint = { x: number; y: number } | null;
+export type HandPoint = {
+  x: number;
+  y: number;
+  // Between the thumb and index fingertips, same space as x/y
+  tipX: number;
+  tipY: number;
+  // Thumb-to-index fingertip distance over the palm size: ~0.1 pinched, ~1 open
+  pinch: number;
+} | null;
 
 export async function startHandTracking(
   video: HTMLVideoElement,
@@ -57,7 +66,18 @@ export async function startHandTracking(
             x += hand[i].x;
             y += hand[i].y;
           }
-          onHand({ x: remap(1 - x / PALM.length), y: remap(y / PALM.length) });
+          // Fingertips: 4 thumb, 8 index; palm size: wrist (0) to the middle finger base (9).
+          // x is scaled by the frame aspect so distances are in the same units both ways
+          const aspect = video.videoWidth / (video.videoHeight || 1);
+          const dist = (a: number, b: number) =>
+            Math.hypot((hand[a].x - hand[b].x) * aspect, hand[a].y - hand[b].y);
+          onHand({
+            x: remap(1 - x / PALM.length),
+            y: remap(y / PALM.length),
+            tipX: remap(1 - (hand[4].x + hand[8].x) / 2),
+            tipY: remap((hand[4].y + hand[8].y) / 2),
+            pinch: dist(4, 8) / (dist(0, 9) || 1),
+          });
         } else {
           onHand(null);
         }

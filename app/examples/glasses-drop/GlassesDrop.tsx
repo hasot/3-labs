@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { playFlash } from "../light-beam/flashSound";
+import { startHandTracking } from "../mask-reveal/handTracker";
 import {
   type Drop,
   type Jelly,
@@ -101,6 +102,15 @@ const SUN_X = 1.04;
 const SUN_Y = 0.3;
 const SHAKE_PX = 16;
 
+// Hand: pinch closes below this fingertip gap (over palm size) and opens above the other
+const PINCH_CLOSE = 0.28;
+const PINCH_OPEN = 0.45;
+// Pinching this close to the glasses (share of the eye distance) still picks them up
+const HAND_REACH = 1.6;
+// How fast the hand cursor follows the camera, 1/s, and how long a lost hand still counts, ms
+const HAND_FOLLOW = 22;
+const HAND_GRACE = 250;
+
 const CAMERA_FOV = 18;
 // Look-only 3D tilt that follows the motion, radians per m/s, its limit and how fast it settles (1/s)
 const TILT_PER_SPEED = 0.05;
@@ -144,6 +154,10 @@ export function GlassesDrop() {
   const timerRef = useRef<HTMLDivElement>(null);
   const whiteRef = useRef<HTMLDivElement>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const camRef = useRef<HTMLVideoElement>(null);
+  const handDotRef = useRef<HTMLDivElement>(null);
+  const startCameraRef = useRef<() => void>(() => {});
+  const [camState, setCamState] = useState<"off" | "starting" | "on" | "denied" | "error">("off");
   const [blind, setBlind] = useState(false);
   const putBackRef = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
@@ -483,10 +497,18 @@ export function GlassesDrop() {
     // --- Pointer -----------------------------------------------------------
 
     const raycaster = new THREE.Raycaster();
-    const toMeters = (e: PointerEvent) => {
+    // Mouse and hand both speak in screen px relative to the page
+    const local = (e: PointerEvent) => {
       const r = main.getBoundingClientRect();
-      const s = toScene(e.clientX - r.left, e.clientY - r.top);
+      return { sx: e.clientX - r.left, sy: e.clientY - r.top };
+    };
+    const toMeters = (sx: number, sy: number) => {
+      const s = toScene(sx, sy);
       return new THREE.Vector2(s.x / PX_PER_M, s.y / PX_PER_M);
+    };
+    const rayAt = (sx: number, sy: number) => {
+      raycaster.setFromCamera(new THREE.Vector2((sx / W) * 2 - 1, -(sy / H) * 2 + 1), camera);
+      return raycaster.intersectObject(hitArea, true)[0];
     };
 
     const bodyQuat = (b: RAPIER.RigidBody) => {
@@ -504,23 +526,26 @@ export function GlassesDrop() {
       body.wakeUp();
     };
 
-    const onDown = (e: PointerEvent) => {
-      if (!world || !glassesBody || (e.target as HTMLElement).closest("a,button")) return;
-      const p = toMeters(e);
+    // Pick up whatever is under (sx, sy). `reach` (px) forgives a shaky hand:
+    // that close to the glasses' center still counts as a grab
+    const pressAt = (sx: number, sy: number, reach = 0) => {
+      if (!world || !glassesBody) return false;
+      const p = toMeters(sx, sy);
       pointer.copy(p);
 
-      // Glasses first: a ray against the real mesh, not the box
-      const r = main.getBoundingClientRect();
-      const ndc = new THREE.Vector2(((e.clientX - r.left) / W) * 2 - 1, -((e.clientY - r.top) / H) * 2 + 1);
-      raycaster.setFromCamera(ndc, camera);
-      const hit = raycaster.intersectObject(hitArea, true)[0];
-      if (hit && glassesState !== "returning") {
+      // Glasses first: a ray against their padded boxes
+      let hitPoint = rayAt(sx, sy)?.point.clone().divideScalar(PX_PER_M);
+      if (!hitPoint && reach > 0) {
+        const g = bodyPos(glassesBody);
+        if (Math.hypot(g.x - p.x, g.y - p.y) * PX_PER_M < reach) hitPoint = g;
+      }
+      if (hitPoint && glassesState !== "returning") {
         if (glassesState === "worn") {
           glassesBody.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
           glassesState = "free";
           setOffState(true);
         }
-        startGrab(glassesBody, hit.point.clone().divideScalar(PX_PER_M));
+        startGrab(glassesBody, hitPoint);
       } else {
         // A letter under the cursor, in its own rotated frame
         for (const l of letters) {
@@ -537,35 +562,38 @@ export function GlassesDrop() {
           }
         }
       }
-      if (grab) {
-        main.setPointerCapture(e.pointerId);
-        setTouched(true);
-        main.style.cursor = "grabbing";
-      }
+      if (!grab) return false;
+      setTouched(true);
+      return true;
     };
 
-    // The cursor in screen px and its speed, for stirring the water
+    // The cursor (or hand) in screen px and its speed, for stirring the water
     const stir = { x: -1e4, y: -1e4, vx: 0, vy: 0, t: 0 };
-    const onMove = (e: PointerEvent) => {
-      pointer.copy(toMeters(e));
-      const r0 = main.getBoundingClientRect();
-      const sx = e.clientX - r0.left;
-      const sy = e.clientY - r0.top;
-      const dt = Math.max(0.008, (e.timeStamp - stir.t) / 1000);
+    const moveTo = (sx: number, sy: number, timeMs: number) => {
+      pointer.copy(toMeters(sx, sy));
+      const dt = Math.max(0.008, (timeMs - stir.t) / 1000);
       // Smoothed so one jumpy event doesn't splash the whole letter
       stir.vx += ((sx - stir.x) / dt - stir.vx) * 0.5;
       stir.vy += ((sy - stir.y) / dt - stir.vy) * 0.5;
       if (stir.t === 0 || dt > 0.25) stir.vx = stir.vy = 0;
       stir.x = sx;
       stir.y = sy;
-      stir.t = e.timeStamp;
-      if (grab) return;
-      // Hover cursor over anything that can be picked up
-      const r = main.getBoundingClientRect();
-      const ndc = new THREE.Vector2(((e.clientX - r.left) / W) * 2 - 1, -((e.clientY - r.top) / H) * 2 + 1);
-      raycaster.setFromCamera(ndc, camera);
-      const overGlasses = raycaster.intersectObject(hitArea, true).length > 0;
-      main.style.cursor = overGlasses ? "grab" : "";
+      stir.t = timeMs;
+    };
+
+    const onDown = (e: PointerEvent) => {
+      if ((e.target as HTMLElement).closest("a,button")) return;
+      const { sx, sy } = local(e);
+      if (pressAt(sx, sy)) {
+        main.setPointerCapture(e.pointerId);
+        main.style.cursor = "grabbing";
+      }
+    };
+    const onMove = (e: PointerEvent) => {
+      const { sx, sy } = local(e);
+      moveTo(sx, sy, e.timeStamp);
+      // Hover cursor over the glasses
+      if (!grab) main.style.cursor = rayAt(sx, sy) ? "grab" : "";
     };
 
     const zAngle = (q: THREE.Quaternion) => new THREE.Euler().setFromQuaternion(q, "ZYX").z;
@@ -600,7 +628,7 @@ export function GlassesDrop() {
       setOffState(false);
     };
 
-    const onUp = () => {
+    const release = () => {
       if (!grab) return;
       if (grab.body === glassesBody) {
         const { dist, da } = offNose();
@@ -616,6 +644,67 @@ export function GlassesDrop() {
       if (sp > MAX_SPEED) grab.body.setLinvel({ x: (v.x / sp) * MAX_SPEED, y: (v.y / sp) * MAX_SPEED, z: 0 }, true);
       grab = null;
       main.style.cursor = "";
+    };
+    const onUp = () => release();
+
+    // --- Hand ----------------------------------------------------------------
+
+    // Latest pinch from the camera (~30 Hz), smoothed every frame into a hand cursor
+    const hand = { tx: 0, ty: 0, x: 0, y: 0, seen: false, lastSeen: -1e9, ratio: 1, pinched: false, holding: false };
+    let stopHand: (() => void) | null = null;
+    startCameraRef.current = async () => {
+      if (stopHand || !camRef.current) return;
+      setCamState("starting");
+      try {
+        const stop = await startHandTracking(camRef.current, (pt) => {
+          hand.seen = !!pt;
+          if (!pt) return;
+          hand.tx = pt.tipX * W;
+          hand.ty = pt.tipY * H;
+          hand.ratio = pt.pinch;
+          hand.lastSeen = performance.now();
+          // Hysteresis: a pinch has to open clearly before it lets go
+          if (hand.pinched ? pt.pinch > PINCH_OPEN : pt.pinch < PINCH_CLOSE) hand.pinched = !hand.pinched;
+        });
+        if (disposed) {
+          stop();
+          return;
+        }
+        stopHand = stop;
+        setCamState("on");
+      } catch (err) {
+        if (disposed) return;
+        setCamState((err as Error)?.name === "NotAllowedError" ? "denied" : "error");
+      }
+    };
+
+    const stepHand = (now: number, dt: number) => {
+      if (!stopHand) return;
+      // A short grace period rides over frames where the model loses the hand
+      const present = hand.seen || now - hand.lastSeen < HAND_GRACE;
+      const dot = handDotRef.current;
+      if (!present) {
+        if (hand.holding) release();
+        hand.holding = false;
+        if (dot) dot.style.opacity = "0";
+        return;
+      }
+      const k = 1 - Math.exp(-dt * HAND_FOLLOW);
+      hand.x += (hand.tx - hand.x) * k;
+      hand.y += (hand.ty - hand.y) * k;
+      moveTo(hand.x, hand.y, now);
+      if (hand.pinched && !hand.holding) {
+        hand.holding = true;
+        pressAt(hand.x, hand.y, eyesPx * HAND_REACH);
+      } else if (!hand.pinched && hand.holding) {
+        hand.holding = false;
+        release();
+      }
+      if (dot) {
+        dot.style.opacity = "1";
+        dot.style.transform = `translate(${hand.x}px, ${hand.y}px) scale(${hand.pinched ? 0.6 : 1})`;
+        dot.dataset.pinched = hand.pinched ? "1" : "0";
+      }
     };
 
     // --- Loop --------------------------------------------------------------
@@ -901,6 +990,7 @@ export function GlassesDrop() {
       const dt = THREE.MathUtils.clamp((now - last) / 1000, 0, 0.1);
       acc = Math.min(acc + dt, STEP * MAX_SUBSTEPS);
       last = now;
+      stepHand(now, dt);
       while (acc >= STEP) {
         stepReturn(now);
         applyGrab();
@@ -959,6 +1049,7 @@ export function GlassesDrop() {
       disposed = true;
       cancelAnimationFrame(raf);
       cleanups.forEach((f) => f());
+      stopHand?.();
       eventQueue?.free();
       world?.free();
       renderer.dispose();
@@ -1010,8 +1101,14 @@ export function GlassesDrop() {
           <span
             className={`transition-opacity duration-700 ${ready && !touched ? "opacity-100" : "opacity-0"}`}
           >
-            <span className="pointer-coarse:hidden">Grab the glasses</span>
-            <span className="hidden pointer-coarse:inline">Drag the glasses off</span>
+            {camState === "on" ? (
+              "Pinch the glasses"
+            ) : (
+              <>
+                <span className="pointer-coarse:hidden">Grab the glasses</span>
+                <span className="hidden pointer-coarse:inline">Drag the glasses off</span>
+              </>
+            )}
           </span>
           <span
             className={`absolute left-0 top-0 whitespace-nowrap transition-opacity duration-700 ${
@@ -1031,11 +1128,44 @@ export function GlassesDrop() {
           >
             Put them back
           </button>
+          {camState !== "on" && (
+            <button
+              type="button"
+              disabled={!ready || camState === "starting"}
+              onClick={() => startCameraRef.current()}
+              className="uppercase tracking-[0.3em] transition-colors hover:text-[#3b0a24] disabled:opacity-50"
+            >
+              {camState === "starting" ? "Starting camera…" : "Use hand"}
+            </button>
+          )}
           <Link href="/" className="transition-colors hover:text-[#3b0a24]">
             Labs
           </Link>
         </nav>
       </header>
+
+      {(camState === "denied" || camState === "error") && (
+        <p className="pointer-events-none absolute top-14 right-6 font-[family-name:var(--font-geist-mono)] text-[11px] text-[#3b0a24]/70 md:top-20 md:right-12">
+          {camState === "denied"
+            ? "Camera access is blocked. Allow it in the browser settings."
+            : "The camera couldn't start."}
+        </p>
+      )}
+      {/* Where the pinch is: an open ring, filled while the fingers are together */}
+      <div
+        ref={handDotRef}
+        data-pinched="0"
+        className="pointer-events-none absolute top-0 left-0 -mt-4 -ml-4 h-8 w-8 rounded-full border-2 border-white opacity-0 shadow-[0_0_18px_rgba(120,20,60,0.35)] transition-[opacity,background-color] duration-150 data-[pinched=1]:bg-white"
+      />
+      {/* Small mirrored camera preview, so it's clear what the page sees */}
+      <video
+        ref={camRef}
+        muted
+        playsInline
+        className={`pointer-events-none absolute right-6 bottom-6 w-36 -scale-x-100 rounded-lg border border-white/40 object-cover opacity-0 transition-opacity duration-700 md:right-12 md:bottom-10 md:w-44 ${
+          camState === "on" ? "opacity-80" : ""
+        }`}
+      />
 
       {/* Heat haze: lightens what's under it, like hot air glowing */}
       <div
