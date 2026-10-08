@@ -544,7 +544,10 @@ export function BladeRave() {
         const surface = swapped ? 2 : level * 1.14 - 0.07;
         poster.style.setProperty("--ink", burnt ? "#000" : "#fff");
         poster.style.setProperty("--ink-low", burnt ? "#000" : BURGUNDY);
-        poster.style.setProperty("--pool", `${Math.max(surface, 0) * window.innerHeight}px`);
+        // The blood line measured from the bottom of the title's box
+        const title = titleRef.current;
+        const below = title ? window.innerHeight - title.offsetTop - title.offsetHeight - poster.offsetTop : 0;
+        poster.style.setProperty("--pool", `${Math.max(surface, 0) * window.innerHeight - below}px`);
       }
     };
 
@@ -654,10 +657,7 @@ export function BladeRave() {
       {/* The poster type: white, black on every hard flash */}
       <div
         ref={posterRef}
-        className="pointer-events-none absolute inset-x-0 bottom-0 bg-clip-text px-6 pb-6 text-transparent md:px-12 md:pb-10"
-        style={{
-          backgroundImage: "linear-gradient(to top, var(--ink-low, #1f0206) var(--pool, 0px), var(--ink, #fff) var(--pool, 0px))",
-        }}
+        className="pointer-events-none absolute inset-x-0 bottom-0 px-6 pb-6 md:px-12 md:pb-10"
       >
         {/* The small print stays white: too thin to read in burgundy on red */}
         <div className={`mb-4 flex flex-wrap items-end justify-between gap-x-10 gap-y-2 text-white opacity-80 ${mono}`}>
@@ -668,9 +668,14 @@ export function BladeRave() {
         </div>
         <h1
           ref={titleRef}
-          className={`${anton.className} whitespace-nowrap text-[clamp(4.5rem,17.5vw,20rem)] leading-[0.8] tracking-[-0.01em] uppercase`}
-          // A white outline keeps the burgundy letters readable on the blood
-          style={{ WebkitTextStroke: "max(1.5px, 0.012em) #fff" }}
+          className={`${anton.className} bg-clip-text whitespace-nowrap text-[clamp(4.5rem,17.5vw,20rem)] leading-[0.8] tracking-[-0.01em] text-transparent uppercase`}
+          style={{
+            // The fill is the title's own background clipped to its letters, so it
+            // moves with the shake; burgundy below the blood line, white above it
+            backgroundImage: "linear-gradient(to top, var(--ink-low, #1f0206) var(--pool, 0px), var(--ink, #fff) var(--pool, 0px))",
+            // A white outline keeps the burgundy letters readable on the blood
+            WebkitTextStroke: "max(1.5px, 0.012em) #fff",
+          }}
         >
           Blood rave
         </h1>
