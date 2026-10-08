@@ -1,0 +1,217 @@
+[
+  {
+    "id": "kage-landing-page",
+    "label": "Kage",
+    "description": "The complete authored Kage temple experience, preserved as an interactive full-page document with its original navigation, scroll scenes, and local Three.js world."
+  },
+  {
+    "id": "complete-shelf-landing-page",
+    "label": "Complete Shelf",
+    "description": "The complete Working Volumes bookshelf page with all seven tools, its responsive editorial interface, and authored Three.js presentation."
+  },
+  {
+    "id": "bestsellers-book-showcase",
+    "label": "Bestsellers Book Showcase",
+    "description": "The complete Field Manuals book showcase, preserved unchanged with its editorial layout, authored motion, interactions, and embedded media."
+  },
+  {
+    "id": "sylva-hero",
+    "label": "Sylva",
+    "description": "The complete Sylva Living Green page, preserved with its Three.js scene, local typography, card imagery, and embedded liquid-metal buttons. The moss-root world with pale flowers, ferns, drifting pollen, the landing butterfly, and native liquid-metal controls behind the full hero layout."
+  },
+  {
+    "id": "meng-to-sketchbook-landing-page",
+    "label": "Sketchbook",
+    "description": "A tactile personal portfolio built as a Singapore sketchbook, with nine illustrated plates, curled page turns, a draggable magnifying glass, zoom controls, a botanical paper atmosphere, and an editorial index."
+  },
+  {
+    "id": "predictive-arc",
+    "label": "Predictive Arc",
+    "description": "Eight animated arc, signal, ribbon, void, and halftone scenes collected in one Canvas 2D, raw-WebGL, and Three.js family."
+  },
+  {
+    "id": "liquid-form",
+    "label": "Liquid Form",
+    "description": "A centered silver ray-marched liquid form with authored studio reflections and pointer-responsive camera drift."
+  },
+  {
+    "id": "crt",
+    "label": "CRT",
+    "description": "One sharpened curved-glass CRT tube driving four screens: the Matrix-era boot terminal, a monochrome film leader, a noise-torn blue signal fault, and an 8-bit console title."
+  },
+  {
+    "id": "energy-orb",
+    "label": "Globe",
+    "description": "The original layered FBM energy sphere with translucent rim glow and depth-aware star field."
+  },
+  {
+    "id": "spark-badge",
+    "label": "Spark Badge",
+    "description": "A luminous credential badge held together by curl-noise embers, carved typography, rain occlusion, waterline sparks, and an adaptive particle field."
+  },
+  {
+    "id": "elements",
+    "label": "Elements",
+    "description": "Water, lightning, fire, condensation, and a painterly generative tree collected as one elemental family across WebGL2 and Canvas 2D."
+  },
+  {
+    "id": "typography-vortex",
+    "label": "Typography Vortex",
+    "description": "Sable’s complete rotating typography vortex with crisp prerendered rings, drifting glyphs, pointer dissolution, particle dust, and click suction — with dark and light surfaces."
+  },
+  {
+    "id": "semantic-bloom",
+    "label": "Semantic Bloom",
+    "description": "A customizable Codex wordmark that draws a viscous particle organism toward its letters, illuminating the text as the network searches and reconnects."
+  },
+  {
+    "id": "globe-study",
+    "label": "Text Path Studies",
+    "description": "Six interactive Canvas 2D typography studies spanning a globe, flowing outlines, morphing glyphs, cloth physics, ripples, and a particle sphere."
+  },
+  {
+    "id": "gallery-heading",
+    "label": "Gallery Heading",
+    "description": "An oversized headline ringed by twelve 4:3 plates — one flat colour each, shaded by a procedural noise field rather than a gradient — that hold still until the pointer arrives, then orbit. Four galleries, each with its own field, typography, and direction."
+  },
+  {
+    "id": "star-portal",
+    "label": "Shader Buttons",
+    "description": "Six authored shader and canvas button treatments collected into one interactive family."
+  },
+  {
+    "id": "rectangle-buttons",
+    "label": "Rectangle Buttons",
+    "description": "Twenty-two authored rectangle-button and animated CTA treatments collected into one family."
+  },
+  {
+    "id": "circle-buttons",
+    "label": "Circle Buttons",
+    "description": "Three compact circular icon controls using the exact Dark Glass, Launch, and Dot Border material systems."
+  },
+  {
+    "id": "liquid-metal-button",
+    "label": "Liquid Metal Button",
+    "description": "A prismatic liquid-metal control in Sign up pill, Liquid Orb, and configurable Play Circle variants, with pointer-following bloom and press ripples."
+  },
+  {
+    "id": "character-carousel",
+    "label": "Character Carousel",
+    "description": "Two authored editorial character-card carousels collected as a light filmstrip and a dark responsive wave."
+  },
+  {
+    "id": "gallery",
+    "label": "Gallery",
+    "description": "The isolated Vantrix hero image ribbon: sixteen curved editorial panels orbiting a vertical cylindrical rail on a quiet paper grid."
+  },
+  {
+    "id": "sylva-living-world",
+    "label": "Sylva Living World",
+    "description": "The original procedural moss-root world with pale flowers, ferns, drifting pollen, scan light, and a landing butterfly."
+  },
+  {
+    "id": "temple-night",
+    "label": "Temple Night",
+    "description": "Kage’s procedural Kyoto mountain temple after dark, with the exact authored architecture, rain, mist, leaves, pointer wisps, camera composition, and bloom pipeline."
+  },
+  {
+    "id": "landscape",
+    "label": "Landscape",
+    "description": "A tower-free procedural terrain whose light, sky, fog, stars, rain, lightning, snow, grass, and stones move through seven authored environment states."
+  },
+  {
+    "id": "japanese-tower",
+    "label": "Country Towers",
+    "description": "Six country-specific towers assembling above a procedural landscape: Japanese, Chinese, Vietnamese, Thai, Khmer, and Ottoman."
+  },
+  {
+    "id": "bookshelf",
+    "label": "Bookshelf",
+    "description": "The exact seven-volume Bookshelf collection with its authored room, carousel shelf, individual cover artwork, foil, pages, inspection, opening, and page-turn system."
+  },
+  {
+    "id": "structure-flow",
+    "label": "Structure Flow",
+    "description": "Thirteen authored Three.js field studies collected as one family, spanning particle domes, horizons, orbital systems, matrices, topology, fluid fields, embers, and vortexes."
+  },
+  {
+    "id": "warp-field",
+    "label": "Warp Field",
+    "description": "Nexus’s focused hero warp: 400 emerald additive streaks and 40 luminous tiles streaming through an authored deep-space fog field."
+  },
+  {
+    "id": "engraved-certificate",
+    "label": "Engraved Certificate",
+    "description": "A responsive engraved certificate: plate field, dual guilloche rosettes, and a drifting harmonic pass that auto-cycles through four cam states."
+  },
+  {
+    "id": "woven-cloth",
+    "label": "Woven Cloth",
+    "description": "A Three.js woven-cloth simulation with Woven Cloth typography printed into its procedural textile so every letter deforms with the fabric, and three companion cloths woven around the same Verlet sheet."
+  },
+  {
+    "id": "performance-gauges",
+    "label": "Performance Gauges",
+    "description": "Four layered CSS instruments — tachometer, speedometer, turbo boost, and EV power — each isolated to one full-bleed dial with polar tick geometry, scale bands, and a self-testing needle sweep."
+  },
+  {
+    "id": "uplink-loader",
+    "label": "Uplink Loader",
+    "description": "A cinematic secure-uplink loader with stepped progress, illuminated telemetry ticks, neon readouts, technical corner markers, mirrored side rails, scanlines, and procedural grain."
+  },
+  {
+    "id": "koi-studies",
+    "label": "Koi Studies",
+    "description": "A tactile stack of three Japanese koi studies with CSS 3D depth, pointer tilt, drag and keyboard navigation, pixel-mask reveals, and animated halftone imagery."
+  },
+  {
+    "id": "article-headings",
+    "label": "Article Headings",
+    "description": "Three expressive text treatments collected in one family: a chromatic intro, a particle wordmark, and an audio-reactive identity lockup."
+  },
+  {
+    "id": "animated-top-dock",
+    "label": "Animated Top Dock",
+    "description": "Sable’s proximity-spring menu in four fits: the authored centred dock, a modern command bar, a fitted pixel-terminal strip, and a vertical refracting Three.js glass rail."
+  },
+  {
+    "id": "sketchbook",
+    "label": "Sketchbook",
+    "description": "The exact Singapore paper sketchbook with nested-strip page curls, direct dragging, tilt, zoom, a movable magnifying glass, and its complete authored plate set."
+  },
+  {
+    "id": "constellation-field",
+    "label": "Constellation Field",
+    "description": "A family of particle networks, gateways, interface lines, defense traces, and topographic fields gathered into one configurable collection."
+  },
+  {
+    "id": "portal-field",
+    "label": "Portal Field",
+    "description": "Five ambient field backgrounds collected across Three.js, raw WebGL, and Canvas 2D renderers."
+  },
+  {
+    "id": "diagnostics-panel",
+    "label": "Diagnostics Panel",
+    "description": "Three diagnostic illustration variants — layered planes, node cubes, and a flowing mesh — each isolated without page chrome or copy."
+  },
+  {
+    "id": "skeuomorphic-toggle",
+    "label": "Skeuomorphic Toggle",
+    "description": "Four takes on one switch: the preserved tactile skeuomorphic export plus flat modern, Three.js glass, and shader-lit treatments, each matching light and dark appearances automatically."
+  },
+  {
+    "id": "matrix-field",
+    "label": "Laser",
+    "description": "Four pointer-reactive laser scenes spanning a preserved matrix junction, atmospheric blade, vanishing array, and halftone relay."
+  },
+  {
+    "id": "wireframe-forms",
+    "label": "Wireframe Forms",
+    "description": "A family of rotating wireframe forms, with the cube, crossed cylinders, and nested sphere isolated as individual variants."
+  },
+  {
+    "id": "brand-orbs",
+    "label": "Brand Orbs",
+    "description": "Twenty-three animated brand marks rebuilt as small and medium dimensional dot orbs for AI status, product activity, and compact loading states."
+  }
+]

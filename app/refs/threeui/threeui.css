@@ -1,0 +1,81 @@
+/* Preview stage rules from ThreeUI's src/styles.css — the components expect to fill .shader-preview */
+.shader-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #050507;
+}
+
+.shader-preview.tall-page-preview {
+  height: min(720px, 80vh);
+  aspect-ratio: auto;
+}
+
+.shader-preview:fullscreen {
+  border-radius: 0;
+}
+
+.shader-preview.condensation {
+  background: transparent;
+}
+
+.shader-preview::after {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: inherit;
+  pointer-events: none;
+  content: "";
+}
+
+.shader-preview .threeui-mount,
+.shader-preview .terrain-plume-component,
+.shader-preview .text-path-study,
+.shader-preview .sunset-valley-scene,
+.shader-preview .mechanical-keyboard,
+.shader-preview .grid-illustrations,
+.shader-preview .retro-metallic,
+.shader-preview .landscape-scene,
+.shader-preview .japanese-tower-landscape,
+.shader-preview .isometric-motion-grid,
+.shader-preview .spark-badge,
+.shader-preview .hypnotic-loops,
+.shader-preview .scalability-bricks,
+.shader-preview .threeui-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shader-preview .text-path-study,
+.shader-preview .sunset-valley-scene,
+.shader-preview .mechanical-keyboard,
+.shader-preview .grid-illustrations,
+.shader-preview .retro-metallic,
+.shader-preview .japanese-tower-landscape,
+.shader-preview .landscape-scene,
+.shader-preview .isometric-motion-grid,
+.shader-preview .scalability-bricks,
+.shader-preview .threeui-background {
+  pointer-events: auto;
+}
+
+.shader-preview .cross-beam-canvas,
+.shader-preview .terrain-plume-canvas,
+.shader-preview .sunset-valley-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.shader-preview .threeui-background > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

@@ -22,6 +22,16 @@ const EXAMPLES = [
     description: "Interactive spotlight following mouse, realistic lighting with shadows.",
   },
   {
+    slug: "hanging",
+    title: "Hanging",
+    description: "Upside-down figure on a web over the city. Push or drag it to swing.",
+  },
+  {
+    slug: "hanging-2d",
+    title: "Hanging 2D",
+    description: "Same swing as a flat rim-lit silhouette in a hoodie.",
+  },
+  {
     slug: "mask-reveal",
     title: "Mask Reveal",
     description: "Sunny landing hero; the cursor tears a smoky trail to the night version.",
@@ -84,6 +94,45 @@ export default function Home() {
               </Link>
             ))}
           </div>
+        </section>
+
+        <section className="mt-16">
+          <Link
+            href="/projects"
+            className="group mb-4 flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/30 p-6 transition-all hover:border-blue-400 hover:bg-slate-800/50"
+          >
+            <div>
+              <h2 className="text-xl font-semibold text-slate-100 mb-1">Projects</h2>
+              <p className="text-slate-400 text-sm">
+                Current landing pages as a gallery, each with a locked step-by-step prompt.
+              </p>
+            </div>
+            <span className="text-blue-400 group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
+          <Link
+            href="/refs/threeui"
+            className="group mb-4 flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/30 p-6 transition-all hover:border-blue-400 hover:bg-slate-800/50"
+          >
+            <div>
+              <h2 className="text-xl font-semibold text-slate-100 mb-1">ThreeUI</h2>
+              <p className="text-slate-400 text-sm">
+                The MengTo/threeui Community catalog, vendored: every component live, with variants and controls.
+              </p>
+            </div>
+            <span className="text-blue-400 group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
+          <Link
+            href="/refs"
+            className="group flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/30 p-6 transition-all hover:border-blue-400 hover:bg-slate-800/50"
+          >
+            <div>
+              <h2 className="text-xl font-semibold text-slate-100 mb-1">Design References</h2>
+              <p className="text-slate-400 text-sm">
+                Vernacular graphics archives, galleries and tools — with notes on what to borrow.
+              </p>
+            </div>
+            <span className="text-blue-400 group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
         </section>
 
         <section className="mt-16 pt-8 border-t border-slate-700">
