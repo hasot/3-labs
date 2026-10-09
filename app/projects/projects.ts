@@ -335,6 +335,94 @@ export const PROJECTS: Project[] = [
       },
     ],
   },
+  {
+    slug: "cocktails",
+    title: "Last Call",
+    category: "Interactive",
+    status: "New",
+    likes: 73,
+    summary:
+      "A cocktail menu as a conveyor: one glass at a time slides along the table into the light, the wall and the cloth change to its palette, the name sits on top like a poster. Grab the glass — with the mouse, or a fist in front of the webcam — carry it, turn your wrist to tip it, and the drink spills over the rim into stains that stay on the table. Bring the rim to your mouth on camera and you drink it.",
+    stack: ["Next.js 16", "React Three Fiber", "GLSL liquid shader", "MediaPipe Hands + Face"],
+    files: [
+      "app/examples/cocktails/page.tsx",
+      "app/examples/cocktails/CocktailScene.tsx",
+      "app/examples/cocktails/drinks.ts",
+      "app/examples/cocktails/liquidMaterial.ts",
+      "app/examples/cocktails/Garnish.tsx",
+      "app/examples/cocktails/Spill.tsx",
+      "app/examples/cocktails/faceTracker.ts",
+      "app/examples/mask-reveal/handTracker.ts",
+    ],
+    packages: ["three@0.186.1", "@react-three/fiber@9.8.1", "@react-three/drei@10.7.9", "@mediapipe/tasks-vision@1.0.1"],
+    prompt: [
+      {
+        title: "Glasses from a profile",
+        body: "No models: every glass is a few [radius, height] points turned on a lathe — Catmull-Rom smoothed outside and inside walls joined by a rounded lip. The liquid volume is the same cavity shrunk a hair off the walls. Six drinks, each with its glass, fill, thin and deep colour, density, opacity, foam, bubbles, ice and garnish.",
+      },
+      {
+        title: "Liquid in a shader",
+        body: "Cut the cavity per pixel at a live surface plane (level, slope, small waves) and discard above it. Back faces seen through the hole are shaded as the surface, with Fresnel and a key-light glint; front faces get Beer–Lambert colour from the chord through the glass, a bright meniscus, rising bubble streams and a foam band. Pouring and sloshing never touch the geometry.",
+      },
+      {
+        title: "Glass and light",
+        body: "MeshTransmissionMaterial on every glass, all sharing one refraction buffer rendered without the glasses. One low hard spotlight throws long shadows; a soft additive pool of the drink's colour lands inside each shadow. Garnishes, ice and the grapefruit wheel are primitives and canvas textures.",
+      },
+      {
+        title: "Poster and conveyor",
+        body: "Camera about 25° above the table, the back edge on a slant. The next glass slides in from off screen while the old one leaves the other way, endlessly in both directions; wall and tablecloth fade to the drink's pair of colours; the drink sloshes on the slide.",
+      },
+      {
+        title: "Grab, tip, spill",
+        body: "Holding the glass, its grip point follows the cursor on a spring and it turns about the line of sight, like drinking seen in profile; the mouse wheel turns it. Past the brim the level drops; the drops leave the lowest point of the rim and fall into glossy stains that grow, merge and never dry.",
+      },
+      {
+        title: "Your hand and your mouth",
+        body: "MediaPipe Hand Landmarker gives the palm point, finger curl and wrist angle: a fist over the glass grabs it, an open palm lets go, the wrist turns it. While the fingers close or open the cursor holds still, so the glass never jumps; a One Euro filter keeps it steady. Face Detector finds the mouth on the same frames: tip the rim at your mouth and it is drunk instead of spilled.",
+      },
+    ],
+  },
+  {
+    slug: "blade-rave",
+    title: "Blood Rave",
+    category: "Hero",
+    status: "New",
+    likes: 112,
+    summary:
+      "A club-night hero after the Blood Rave from Blade. Steel doors with a bouncer split along their seam and swing open; the camera walks in and the track starts. A strobe fires on every kick — a blown-out freeze-frame with a punch-in, a shake and an RGB tear. Click and the sprinklers open: blood sprays from above, runs over the crowd, floods the screen and soaks into the same room, red.",
+    stack: ["Next.js 16", "WebGL2 shader", "Web Audio beat detection"],
+    files: [
+      "app/examples/blade-rave/page.tsx",
+      "app/examples/blade-rave/BladeRave.tsx",
+      "app/examples/blade-rave/raveSound.ts",
+      "public/images/blade-rave.webp",
+      "public/images/blade-rave-blood.webp",
+      "public/images/blade-rave-door.webp",
+      "public/sounds/blade-rave.mp3",
+    ],
+    prompt: [
+      {
+        title: "Doors to the club",
+        body: "Split the door photo along the seam between its leaves and swing both halves open in 3D, darkening as they turn; behind them the club still zooms back from 118% as you walk in.",
+      },
+      {
+        title: "Kicks from the track",
+        body: "Play the track through Web Audio and watch the 40–140 Hz band: a kick is a jump well over its running average, no sooner than 0.3 s after the last one.",
+      },
+      {
+        title: "Strobe as freeze-frames",
+        body: "One WebGL2 pass over the photo. Every kick overexposes it for a few hundredths of a second with a punch-in towards the hero, a shake and an RGB tear; mostly white flashes, some ice blue, some club red. Hard, soft and off modes for people who can't take flashing light.",
+      },
+      {
+        title: "Sprinklers",
+        body: "Ten seconds in, or on the first click, blood sprays from four nozzles above the frame and runs down heads and shoulders, then a pool rises from the floor until it floods the screen, stands a moment and soaks in, patch by patch, into the bloody version of the same shot.",
+      },
+      {
+        title: "Poster type",
+        body: "A huge Anton headline at the bottom whose fill is its own background clipped to the letters: burgundy below the blood line, white above, with a white outline so it reads on red.",
+      },
+    ],
+  },
 ];
 
 export const CATEGORIES = ["All", ...Array.from(new Set(PROJECTS.map((p) => p.category)))];

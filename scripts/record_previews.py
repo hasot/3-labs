@@ -295,6 +295,43 @@ async def ink_flow(v):
     await v.drift(6.5)  # the wisps curl and fade, the word goes dark again
 
 
+async def cocktails(v):
+    # Pick the glass up, carry it off and tip it with the wheel: the drink spills into a stain.
+    # Set it back, tap it to pour it again, then send a few drinks down the conveyor
+    await v.drift(0.6)
+    await v.move((0.50, 0.63), 0.8)
+    await v.drift(0.3, 0.004)
+    await v.page.mouse.down()
+    await v.move((0.36, 0.44), 0.7)
+    for _ in range(10):
+        await v.page.mouse.wheel(0, 40)
+        await asyncio.sleep(0.03)
+    await v.drift(1.4, 0.006)
+    for _ in range(10):
+        await v.page.mouse.wheel(0, -40)
+        await asyncio.sleep(0.03)
+    await v.move((0.50, 0.63), 0.7)
+    await v.page.mouse.up()
+    await v.drift(0.8, 0.004)
+    await v.click()  # pours it again
+    await v.drift(1.6, 0.006)
+    await v.move((0.84, 0.80), 0.8)
+    for _ in range(3):
+        await v.page.keyboard.press("ArrowRight")
+        await v.drift(1.9)
+
+
+async def blade_rave(v):
+    # Through the doors, a few strobe kicks, then the sprinklers flood the club
+    await v.move((0.516, 0.42), 0.8)
+    await v.drift(0.4, 0.004)
+    await v.click()
+    await v.move((0.62, 0.55), 0.6)
+    await v.drift(3.2)
+    await v.click()  # sprinklers open
+    await v.drift(11.5, 0.01)
+
+
 SCENARIOS = {
     # slug: (cursor, start point, seconds to let the page settle, scenario)
     "bat-signal": ("arrow", (0.55, 0.42), 6.0, bat_signal),
@@ -304,6 +341,8 @@ SCENARIOS = {
     "tiger": (None, (0.50, 0.15), 3.0, tiger),
     "mask-reveal-hand": ("hand", (0.20, 0.20), 3.0, lambda v: mask_reveal(v, mirror=True)),
     "ink-flow": ("arrow", (0.86, 0.82), 7.0, ink_flow),
+    "cocktails": ("hand", (0.84, 0.80), 6.0, cocktails),
+    "blade-rave": ("arrow", (0.50, 0.70), 3.0, blade_rave),
 }
 
 
@@ -403,6 +442,8 @@ async def main():
             "--disable-backgrounding-occluded-windows",
             "--disable-renderer-backgrounding",
             "--disable-background-timer-throttling",
+            # The clips are silent anyway; Web Audio still runs (Blood Rave's strobe listens to it)
+            "--mute-audio",
         ])
         for i, slug in enumerate(slugs):
             await record(browser, slug, seed=i + 1)
