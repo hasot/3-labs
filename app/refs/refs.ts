@@ -210,4 +210,33 @@ export const REF_GROUPS: RefGroup[] = [
       },
     ],
   },
+  {
+    id: "sites",
+    title: "Сайты",
+    note: "Отдельные страницы, у которых стоит подсмотреть приём.",
+    en: {
+      title: "Sites",
+      note: "Single pages worth borrowing a move from.",
+    },
+    refs: [
+      {
+        id: "xianyaowei",
+        name: "Xianyao Wei",
+        url: "https://xianyaowei.com",
+        image: "xianyaowei",
+        meta: ["портфолио", "креативный разработчик", "Three.js, R3F, WebGPU"],
+        description:
+          "Портфолио креативного разработчика из Германии. На первом экране — 3D-куча старых кнопочных Siemens в зелёной подсветке, поверх неё имя пиксельным неоном и сетка на чёрном. Ниже — кейсы Susurrus и Weisdevice (Honorable Mention на Awwwards, Site of the Day на CSSDA, разборы на Codrops) и лаборатория экспериментов.",
+        takeaway:
+          "Один узнаваемый 3D-объект вместо абстрактного фона; монохромная зелёная палитра с неоновым свечением держит весь сайт; блок «Lab» с номерами 01–04 — готовый формат для витрины наших экспериментов.",
+        en: {
+          meta: ["portfolio", "creative developer", "Three.js, R3F, WebGPU"],
+          description:
+            "Portfolio of a creative developer based in Germany. The first screen is a 3D pile of old Siemens keypad phones in green light, with the name in pixel neon over a grid on black. Below: the Susurrus and Weisdevice cases (Awwwards Honorable Mention, CSSDA Site of the Day, Codrops case studies) and a lab of experiments.",
+          takeaway:
+            "One recognisable 3D object instead of an abstract background; a monochrome green palette with neon glow carries the whole site; the numbered 01–04 “Lab” block is a ready format for showcasing our own experiments.",
+        },
+      },
+    ],
+  },
 ];

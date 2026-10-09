@@ -16,6 +16,7 @@ const UI = {
     lead: "Архивы странной графики, галереи и инструменты. У каждой ссылки — что это и что из неё брать.",
     all: "Все",
     compositions: "Композиции первых экранов →",
+    transitions: "Переходы →",
     threeui: "Реализации ThreeUI →",
     borrow: "Что брать",
     shot: "Скриншот",
@@ -27,6 +28,7 @@ const UI = {
     lead: "Archives of strange graphics, galleries and tools. Each link comes with what it is and what to borrow from it.",
     all: "All",
     compositions: "Hero compositions →",
+    transitions: "Transitions →",
     threeui: "ThreeUI implementations →",
     borrow: "What to borrow",
     shot: "Screenshot of",
@@ -100,6 +102,12 @@ export function RefsView() {
             className="inline-block rounded-full bg-gradient-to-b from-white to-[#dcd6ff] px-8 py-3.5 text-lg font-semibold text-[#141414] shadow-[0_0_40px_rgb(220_214_255/0.25)] transition hover:scale-[1.03]"
           >
             {t.compositions}
+          </Link>
+          <Link
+            href="/refs/transitions"
+            className="inline-block rounded-full px-8 py-3.5 text-lg font-semibold text-white ring-1 ring-white/25 transition hover:scale-[1.03] hover:ring-white/50"
+          >
+            {t.transitions}
           </Link>
           <Link
             href="/refs/threeui"
