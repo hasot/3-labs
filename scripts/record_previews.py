@@ -321,6 +321,15 @@ async def cocktails(v):
         await v.drift(1.9)
 
 
+async def cocktails_carousel(v):
+    # The bar menu on its own for the flipbook magazine: no hand, no spills, the glasses just
+    # slide past one by one. Six steps bring the first drink back, so the loop closes on itself
+    await v.wait(1.6)
+    for _ in range(6):
+        await v.page.keyboard.press("ArrowRight")
+        await v.wait(2.1)
+
+
 async def blade_rave(v):
     # Through the doors, a few strobe kicks, then the sprinklers flood the club
     await v.move((0.516, 0.42), 0.8)
@@ -343,7 +352,11 @@ SCENARIOS = {
     "ink-flow": ("arrow", (0.86, 0.82), 7.0, ink_flow),
     "cocktails": ("hand", (0.84, 0.80), 6.0, cocktails),
     "blade-rave": ("arrow", (0.50, 0.70), 3.0, blade_rave),
+    "cocktails-carousel": (None, (0.50, 0.95), 6.0, cocktails_carousel),
 }
+
+# Recordings of a page under another name: the slug is the output file, the value the page
+PAGES = {"cocktails-carousel": "cocktails"}
 
 
 def run(cmd):
@@ -391,7 +404,7 @@ async def record(browser, slug, seed):
     context = await browser.new_context(viewport={"width": W, "height": H}, device_scale_factor=1)
     await context.add_init_script(f"({CURSOR_SCRIPT})({json.dumps(cursor or 'none')})")
     page = await context.new_page()
-    await page.goto(f"{BASE_URL}/examples/{slug}/", wait_until="networkidle", timeout=120_000)
+    await page.goto(f"{BASE_URL}/examples/{PAGES.get(slug, slug)}/", wait_until="networkidle", timeout=120_000)
 
     v = Visitor(page, seed)
     # Put the hand at the start point before filming, so the first frame already has it
